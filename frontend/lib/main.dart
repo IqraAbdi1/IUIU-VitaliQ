@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart'; // Make sure this path matches your folder structure!
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const VitaliqApp());
@@ -13,12 +13,8 @@ class VitaliqApp extends StatelessWidget {
     return MaterialApp(
       title: 'Vitaliq',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        // Add your custom theme settings here if you have them in theme.dart
-      ),
-      home:
-          const HomeScreen(), // Point this to YOUR class name in home_screen.dart
+      theme: ThemeData(useMaterial3: true),
+      home: const HomeScreen(),
     );
   }
 }
