@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/theme.dart';
+import '../theme.dart';
 import 'home_screen.dart';
 
 class MainShell extends StatefulWidget {
