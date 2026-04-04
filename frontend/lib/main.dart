@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/login_screen.dart';
-import 'screens/splash_screen.dart';
+import 'screens/main_shell.dart';
 import '../theme.dart';
 
 void main() {
@@ -16,7 +16,7 @@ class VitaliqApp extends StatelessWidget {
       title: 'Vitaliq',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SplashScreen(),
+      home: const MainShell(),
     );
   }
 }
