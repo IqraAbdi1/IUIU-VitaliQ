@@ -157,7 +157,7 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFEEF0F4),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         children: [
           _SectionLabel(label: 'Active Course · ${_active.issuedAt}'),
           const SizedBox(height: 8),
