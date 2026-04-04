@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'package:frontend/screens/login_screen.dart';
+import 'screens/splash_screen.dart';
+import '../theme.dart';
 
 void main() {
   runApp(const VitaliqApp());
@@ -13,8 +15,8 @@ class VitaliqApp extends StatelessWidget {
     return MaterialApp(
       title: 'Vitaliq',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true),
-      home: const HomeScreen(),
+      theme: AppTheme.lightTheme,
+      home: const SplashScreen(),
     );
   }
 }
