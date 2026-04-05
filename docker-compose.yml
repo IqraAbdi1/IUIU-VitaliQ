@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - ./database/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=vitaliq_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password123 # Change this for production!
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://admin:password123@db:5432/vitaliq_db
+    depends_on:
+      - db
+
+  # Flutter Web (Optional to Dockerize)
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
