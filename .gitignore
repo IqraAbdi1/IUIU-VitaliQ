@@ -1,0 +1,45 @@
+# --- General / OS ---
+.DS_Store
+Thumbs.db
+.env
+*.log
+
+# --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+# If you use web:
+build/web/
+# If you use mobile:
+ios/.generated/
+android/.gradle/
+android/app/local.properties
+
+# --- Python / Django / AI-ML ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.python-version
+db.sqlite3
+media/
+static/
+.ipynb_checkpoints/
+
+# --- Database ---
+database/data/
+*.sql.gz
+*.dump
+
+# --- IDEs / Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
