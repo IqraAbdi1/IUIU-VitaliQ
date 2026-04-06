@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import 'symptom_submission_sheet.dart';
+import 'queue_submission_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -290,11 +292,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCheckInCta() {
     return ElevatedButton.icon(
       onPressed: () {
-        // Toggle the queue status and simulate a wait-time increase
-        setState(() {
-          isPatientInQueue = true;
-          estimatedWaitMinutes = estimatedWaitMinutes + 10;
-        });
+        showSymptomSubmissionSheet(
+          context,
+          onSubmitted: (data) {
+            setState(() {
+              isPatientInQueue = true;
+              estimatedWaitMinutes = estimatedWaitMinutes + 10;
+            });
+          },
+        );
       },
       icon: const Icon(Icons.sick_outlined, color: Colors.white),
       label: const Text("I'm feeling sick! Check-in"),
@@ -309,42 +315,56 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActiveQueueCta() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => QueueSubmissionScreen(
+              queueNumber: queuePosition + 1,
+              onCancelled: () {
+                setState(() {
+                  isPatientInQueue = false;
+                  estimatedWaitMinutes = estimatedWaitMinutes - 10;
+                });
+              },
+            ),
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                "You're in the queue",
-                style: TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 17),
+        decoration: BoxDecoration(
+          color: const Color(0xFF16714A),
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF16714A).withValues(alpha: 0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              "You're in the queue",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                letterSpacing: 0.1,
               ),
-            ],
-          ),
-          // Shows the user their specific spot in the sequence
-          Text(
-            "#Q-${queuePosition + 1}",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

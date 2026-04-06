@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/screens/lab_results_screen.dart';
 import '../theme.dart';
 import 'home_screen.dart';
 import 'my_health_screen.dart';
@@ -38,6 +39,11 @@ const _patientTabs = [
     label: 'Prescriptions',
     icon: Icons.medication_rounded,
     screen: PrescriptionsScreen(),
+  ),
+  _TabItem(
+    label: 'Lab',
+    icon: Icons.search_off_rounded,
+    screen: LabResultsScreen(),
   ),
 ];
 
