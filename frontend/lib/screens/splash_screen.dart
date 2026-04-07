@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import '../theme.dart';
 import 'login_screen.dart';
 
@@ -18,6 +19,10 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
+    // Hand off from native splash to Flutter as soon as our widget is ready.
+    // This replaces the static native splash with our animated one seamlessly.
+    FlutterNativeSplash.remove();
 
     // Fade + slide animation for logo entrance
     _controller = AnimationController(

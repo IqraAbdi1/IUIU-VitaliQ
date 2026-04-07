@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import 'main_shell.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -64,14 +65,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateByRole(String role) {
-    // TODO: Replace with proper named routes once navigation is set up
-    // Navigator.pushReplacementNamed(context, '/$role/home');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Logged in as $role'),
-        backgroundColor: AppColors.ok,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    // Navigate to MainShell, passing the role so it can load the correct tabs.
+    // pushReplacement removes LoginScreen from the stack — back button won't return to it.
+    // TODO: When backend is ready, replace mock role with decoded JWT claim.
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => MainShell(role: role),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 400),
       ),
     );
   }

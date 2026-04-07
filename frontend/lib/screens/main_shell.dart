@@ -52,7 +52,12 @@ const _patientTabs = [
 // ---------------------------------------------------------------------------
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  // Role passed from LoginScreen after successful auth.
+  // Used to select the correct tab set for this user type.
+  // Backend: decoded from JWT claim 'role' → 'patient' | 'doctor' | 'lab' | 'pharmacy' | 'admin'
+  final String role;
+
+  const MainShell({super.key, this.role = 'patient'});
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -61,9 +66,26 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  // TODO: swap _patientTabs for _doctorTabs / _labTabs etc. based on user role
-  // from auth response: user.role → pick correct tab set
-  final List<_TabItem> _tabs = _patientTabs;
+  // Tab set is selected based on the role passed from LoginScreen.
+  // When staff screens are built, add their tab lists here and extend the map.
+  // TODO: add _doctorTabs, _labTabs, _pharmacyTabs, _adminTabs
+  late final List<_TabItem> _tabs;
+
+  @override
+  void initState() {
+    super.initState();
+    // For now all non-patient roles fall back to patient tabs
+    // until their screens are built. Replace each case as screens are added.
+    _tabs = _patientTabs;
+    // Future:
+    // switch (widget.role) {
+    //   case 'doctor':   _tabs = _doctorTabs; break;
+    //   case 'lab':      _tabs = _labTabs; break;
+    //   case 'pharmacy': _tabs = _pharmacyTabs; break;
+    //   case 'admin':    _tabs = _adminTabs; break;
+    //   default:         _tabs = _patientTabs;
+    // }
+  }
 
   @override
   Widget build(BuildContext context) {
