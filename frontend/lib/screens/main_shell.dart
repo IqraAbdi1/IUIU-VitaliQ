@@ -4,6 +4,7 @@ import '../theme.dart';
 import 'home_screen.dart';
 import 'my_health_screen.dart';
 import 'prescriptions_screen.dart';
+import 'doctor_queue_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Tab configuration — easy to extend per role later
@@ -47,6 +48,31 @@ const _patientTabs = [
   ),
 ];
 
+const _doctorTabs = [
+  _TabItem(
+    label: 'Queue',
+    icon: Icons.format_list_bulleted_rounded,
+    screen: DoctorQueueScreen(),
+  ),
+  // TODO: add DoctorLabScreen() when built
+  // _TabItem(
+  //   label: 'Lab',
+  //   icon: Icons.biotech_rounded,
+  //   screen: DoctorLabScreen(),
+  // ),
+  // TODO: add ChatScreen() when built
+  // _TabItem(
+  //   label: 'Chat',
+  //   icon: Icons.chat_bubble_outline_rounded,
+  //   screen: ChatScreen(),
+  // ),
+];
+
+// TODO: populate when screens are built
+// const _labTabs = [ ... ];
+// const _pharmacyTabs = [ ... ];
+// const _adminTabs = [ ... ];
+
 // ---------------------------------------------------------------------------
 // Shell
 // ---------------------------------------------------------------------------
@@ -66,25 +92,23 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  // Tab set is selected based on the role passed from LoginScreen.
-  // When staff screens are built, add their tab lists here and extend the map.
-  // TODO: add _doctorTabs, _labTabs, _pharmacyTabs, _adminTabs
   late final List<_TabItem> _tabs;
 
   @override
   void initState() {
     super.initState();
-    // For now all non-patient roles fall back to patient tabs
-    // until their screens are built. Replace each case as screens are added.
-    _tabs = _patientTabs;
-    // Future:
-    // switch (widget.role) {
-    //   case 'doctor':   _tabs = _doctorTabs; break;
-    //   case 'lab':      _tabs = _labTabs; break;
-    //   case 'pharmacy': _tabs = _pharmacyTabs; break;
-    //   case 'admin':    _tabs = _adminTabs; break;
-    //   default:         _tabs = _patientTabs;
-    // }
+    switch (widget.role) {
+      case 'doctor':
+        _tabs = _doctorTabs;
+        break;
+      // Remaining roles fall back to patient tabs until their screens are built.
+      // Uncomment each case as staff screens are added:
+      // case 'lab':      _tabs = _labTabs;      break;
+      // case 'pharmacy': _tabs = _pharmacyTabs; break;
+      // case 'admin':    _tabs = _adminTabs;    break;
+      default:
+        _tabs = _patientTabs;
+    }
   }
 
   @override
