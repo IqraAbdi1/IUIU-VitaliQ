@@ -6,6 +6,7 @@ import 'my_health_screen.dart';
 import 'prescriptions_screen.dart';
 import 'doctor_queue_screen.dart';
 import 'lab_tech_screen.dart';
+import 'pharmacy_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Tab configuration — easy to extend per role later
@@ -80,6 +81,19 @@ const _labTabs = [
   // ),
 ];
 // const _pharmacyTabs = [ ... ];
+const _pharmacyTabs = [
+  _TabItem(
+    label: 'Stock',
+    icon: Icons.inventory_2_rounded,
+    screen: PharmacyScreen(),
+  ),
+  // TODO: add ChatScreen() when built
+  // _TabItem(
+  //   label: 'Chat',
+  //   icon: Icons.chat_bubble_outline_rounded,
+  //   screen: ChatScreen(),
+  // ),
+];
 // const _adminTabs = [ ... ];
 
 // ---------------------------------------------------------------------------
@@ -115,7 +129,9 @@ class _MainShellState extends State<MainShell> {
       case 'lab':
         _tabs = _labTabs;
         break;
-      // case 'pharmacy': _tabs = _pharmacyTabs; break;
+      case 'pharmacy':
+        _tabs = _pharmacyTabs;
+        break;
       // case 'admin':    _tabs = _adminTabs;    break;
       default:
         _tabs = _patientTabs;
