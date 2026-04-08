@@ -5,6 +5,7 @@ import 'home_screen.dart';
 import 'my_health_screen.dart';
 import 'prescriptions_screen.dart';
 import 'doctor_queue_screen.dart';
+import 'lab_tech_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Tab configuration — easy to extend per role later
@@ -69,7 +70,15 @@ const _doctorTabs = [
 ];
 
 // TODO: populate when screens are built
-// const _labTabs = [ ... ];
+const _labTabs = [
+  _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
+  // TODO: add ChatScreen() when built
+  // _TabItem(
+  //   label: 'Chat',
+  //   icon: Icons.chat_bubble_outline_rounded,
+  //   screen: ChatScreen(),
+  // ),
+];
 // const _pharmacyTabs = [ ... ];
 // const _adminTabs = [ ... ];
 
@@ -103,7 +112,9 @@ class _MainShellState extends State<MainShell> {
         break;
       // Remaining roles fall back to patient tabs until their screens are built.
       // Uncomment each case as staff screens are added:
-      // case 'lab':      _tabs = _labTabs;      break;
+      case 'lab':
+        _tabs = _labTabs;
+        break;
       // case 'pharmacy': _tabs = _pharmacyTabs; break;
       // case 'admin':    _tabs = _adminTabs;    break;
       default:
