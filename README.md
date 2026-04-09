@@ -11,9 +11,9 @@ The system is organized into a decoupled, containerized architecture:
 
 
 - **`/frontend`**: Flutter-based client application (Web & Mobile support).
-- **`/backend`**: Django REST Framework API handling business logic and orchestration.
-- **`/ai_ml`**: Python-based modules for predictive medical analytics and data preprocessing.
-- **`/database`**: PostgreSQL relational database schema and persistence layer.
+- **`/backend`**: FastAPI REST API handling business logic and orchestration.
+- **`/ai_ml`**: Model training, preprocessing pipelines, and saved model artifacts. The trained model is imported directly by the /backend service at runtime — no separate inference server needed.
+- **`/database`**: PostgreSQL schema definitions and Alembic migration files. Migrations are run before the FastAPI service starts — this folder is the single source of truth for the database structure.
 - **`/docs`**: Project documentation, including BRD, UI Mockups, and System Architecture diagrams.
 
 ## Tech Stack
@@ -21,9 +21,9 @@ The system is organized into a decoupled, containerized architecture:
 | Tier | Technology |
 | :--- | :--- |
 | **Frontend** | Flutter (Dart) |
-| **Backend** | Django / Django REST Framework |
+| **Backend** |  FastAPI (Python) |
 | **Database** | PostgreSQL |
-| **ML/AI** | Python (Pandas, Scikit-learn) |
+| **ML/AI** | Python · scikit-learn · TensorFlow Lite |
 | **DevOps** | Docker & Docker Compose |
 
 ## Getting Started
