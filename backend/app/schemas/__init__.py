@@ -1,0 +1,1 @@
+# schemas\ <<< Pydantic schemas → validates API input/output

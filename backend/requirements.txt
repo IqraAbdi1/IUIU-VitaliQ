@@ -1,3 +1,6 @@
+#all dependencies for API + DB + ML
+
+
 django
 djangorestframework
 psycopg2-binary
