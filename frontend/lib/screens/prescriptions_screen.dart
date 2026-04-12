@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
+import '../shared/widgets.dart';
 
-// ---------------------------------------------------------------------------
-// DATA MODELS
-// These will be replaced by API responses from FastAPI /prescriptions endpoint
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────────────────────────────────────────
 
 enum PrescriptionStatus { active, completed }
 
 class PrescriptionDose {
-  final String time; // e.g. "08:00"
-  final String medicineName; // e.g. "Artemether-Lumefantrine"
-  final String instructions; // e.g. "2 tablets · with food"
-  bool taken;
+  final String time; // Backend: prescription_dose.time
+  final String medicineName; // Backend: prescription_dose.medicine_name
+  final String instructions; // Backend: prescription_dose.instructions
+  bool taken; // Backend: PATCH /api/v1/prescriptions/{id}/doses/{dose_id}/taken
 
   PrescriptionDose({
     required this.time,
@@ -22,10 +23,10 @@ class PrescriptionDose {
 }
 
 class CourseDay {
-  final int dayNumber;
-  final bool isToday;
-  final int totalDoses;
-  final int takenDoses;
+  final int dayNumber; // Backend: prescription_day.day_number
+  final bool isToday; // Backend: derived from prescription_day.date vs today
+  final int totalDoses; // Backend: prescription_day.total_doses
+  final int takenDoses; // Backend: prescription_day.taken_doses
 
   const CourseDay({
     required this.dayNumber,
@@ -37,14 +38,15 @@ class CourseDay {
 
 class Prescription {
   final String id; // Backend: prescription.id
-  final String courseTitle; // e.g. "Malaria Treatment"
-  final String doctorName; // e.g. "Dr. Kato Emmanuel"
+  final String courseTitle; // Backend: prescription.course_title
+  final String doctorName; // Backend: doctor.full_name
   final String issuedAt; // Backend: prescription.issued_at (formatted)
-  final String endsOn; // e.g. "March 10"
-  final String dayLabel; // e.g. "Day 2 of 3"
-  final PrescriptionStatus status;
-  final List<PrescriptionDose> doses;
-  final List<CourseDay> courseDays;
+  final String endsOn; // Backend: prescription.ends_on (formatted)
+  final String dayLabel; // Backend: derived — "Day X of Y"
+  final PrescriptionStatus status; // Backend: prescription.status
+  final List<PrescriptionDose>
+  doses; // Backend: GET /api/v1/prescriptions/active
+  final List<CourseDay> courseDays; // Backend: GET /api/v1/prescriptions/active
   final String? doctorNote; // Backend: consultation.diagnostic_notes
 
   const Prescription({
@@ -62,15 +64,17 @@ class Prescription {
 }
 
 class PastPrescription {
-  final String courseTitle; // e.g. "URI Treatment"
-  final String summary; // e.g. "Amoxicillin 500mg · Jan 14 · Dr. Ssali"
+  final String courseTitle; // Backend: prescription.course_title
+  final String summary; // Backend: derived — medicine + date + doctor
 
   const PastPrescription({required this.courseTitle, required this.summary});
 }
 
-// ---------------------------------------------------------------------------
-// MOCK DATA — swap for API call: GET /api/v1/prescriptions?patient_id={id}
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// MOCK DATA
+// Backend: GET /api/v1/prescriptions/active?patient_id={id}
+//          GET /api/v1/prescriptions?patient_id={id}
+// ─────────────────────────────────────────────────────────────────────────────
 
 final _mockActivePrescription = Prescription(
   id: 'rx-001',
@@ -119,9 +123,9 @@ const _mockPastPrescriptions = [
   ),
 ];
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // SCREEN
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 class PrescriptionsScreen extends StatefulWidget {
   const PrescriptionsScreen({super.key});
@@ -132,16 +136,18 @@ class PrescriptionsScreen extends StatefulWidget {
 
 class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
   // Local mutable copy so dose check-off updates UI without touching mock const
+  // Backend: replace with API state management
   late Prescription _active;
 
   @override
   void initState() {
     super.initState();
-    // TODO: replace with API call → GET /api/v1/prescriptions/active?patient_id={id}
+    // TODO: replace with GET /api/v1/prescriptions/active?patient_id={id}
     _active = _mockActivePrescription;
   }
 
   void _toggleDose(int index) {
+    // Backend: PATCH /api/v1/prescriptions/{id}/doses/{dose_id}/taken
     setState(() {
       _active.doses[index].taken = !_active.doses[index].taken;
     });
@@ -151,59 +157,42 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFEEF0F4),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        children: [
-          _SectionLabel(label: 'Active Course · ${_active.issuedAt}'),
-          const SizedBox(height: 8),
-          _ActiveCourseCard(
-            prescription: _active,
-            takenCount: _takenTodayCount,
-            onToggleDose: _toggleDose,
-          ),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      children: [
+        // ── Uses shared AppSectionHeader ──
+        AppSectionHeader(title: 'Active Course · ${_active.issuedAt}'),
+        const SizedBox(height: 8),
+        _ActiveCourseCard(
+          prescription: _active,
+          takenCount: _takenTodayCount,
+          onToggleDose: _toggleDose,
+        ),
+        const SizedBox(height: 12),
+        _CourseProgressCard(prescription: _active),
+        if (_active.doctorNote != null) ...[
           const SizedBox(height: 12),
-          _CourseProgressCard(prescription: _active),
-          if (_active.doctorNote != null) ...[
-            const SizedBox(height: 12),
-            _DoctorNoteBox(note: _active.doctorNote!),
-          ],
-          const SizedBox(height: 18),
-          const _SectionLabel(label: 'Past Prescriptions'),
-          const SizedBox(height: 8),
-          _PastPrescriptionsCard(items: _mockPastPrescriptions),
-          const SizedBox(height: 24),
+          // ── Uses shared AppInfoBox ──
+          AppInfoBox(
+            label: "Doctor's Instructions",
+            body: _active.doctorNote!,
+            variant: AppInfoVariant.accent,
+          ),
         ],
-      ),
+        const SizedBox(height: 18),
+        // ── Uses shared AppSectionHeader ──
+        const AppSectionHeader(title: 'Past Prescriptions'),
+        const SizedBox(height: 8),
+        _PastPrescriptionsCard(items: _mockPastPrescriptions),
+        const SizedBox(height: 24),
+      ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // WIDGETS
-// ---------------------------------------------------------------------------
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF44556A),
-        letterSpacing: 0.07 * 11,
-      ),
-    );
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ── Active course card ──────────────────────────────────────────────────────
 
@@ -224,10 +213,10 @@ class _ActiveCourseCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: const Border(
-          left: BorderSide(color: Color(0xFF1A7FC1), width: 3.5),
+          left: BorderSide(color: AppColors.accent, width: 3.5),
         ),
         boxShadow: const [
           BoxShadow(
@@ -254,7 +243,7 @@ class _ActiveCourseCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF151E2B),
+                          color: AppColors.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -262,30 +251,34 @@ class _ActiveCourseCard extends StatelessWidget {
                         prescription.doctorName,
                         style: const TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF8A9BB0),
+                          color: AppColors.ink3,
                         ),
                       ),
                     ],
                   ),
                 ),
-                _StatusChip(label: prescription.dayLabel, type: _ChipType.warn),
+                // ── Uses shared AppStatusChip ──
+                AppStatusChip(
+                  label: prescription.dayLabel,
+                  status: AppStatus.warn,
+                ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE0E4EB)),
+          Divider(height: 1, color: AppColors.border),
 
           // Dose rows
-          ...List.generate(doses.length, (i) {
-            final dose = doses[i];
-            return _DoseRow(
-              dose: dose,
+          ...List.generate(
+            doses.length,
+            (i) => _DoseRow(
+              dose: doses[i],
               isLast: i == doses.length - 1,
               onTap: () => onToggleDose(i),
-            );
-          }),
+            ),
+          ),
 
           // Footer
-          const Divider(height: 1, color: Color(0xFFE0E4EB)),
+          Divider(height: 1, color: AppColors.border),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
@@ -295,7 +288,7 @@ class _ActiveCourseCard extends StatelessWidget {
                   text: TextSpan(
                     style: const TextStyle(
                       fontSize: 11.5,
-                      color: Color(0xFF8A9BB0),
+                      color: AppColors.ink3,
                     ),
                     children: [
                       const TextSpan(text: 'Ends '),
@@ -303,16 +296,17 @@ class _ActiveCourseCard extends StatelessWidget {
                         text: prescription.endsOn,
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF151E2B),
+                          color: AppColors.ink,
                         ),
                       ),
                     ],
                   ),
                 ),
-                _StatusChip(
+                // ── Uses shared AppStatusChip ──
+                AppStatusChip(
                   label:
                       '$takenCount / ${prescription.doses.length} done today',
-                  type: _ChipType.ok,
+                  status: AppStatus.ok,
                 ),
               ],
             ),
@@ -340,7 +334,7 @@ class _DoseRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+            : Border(bottom: BorderSide(color: AppColors.border)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       child: Row(
@@ -351,10 +345,10 @@ class _DoseRow extends StatelessWidget {
             child: Text(
               dose.time,
               style: const TextStyle(
-                fontFamily: 'monospace',
+                fontFamily: 'DMMono',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF8A9BB0),
+                color: AppColors.ink3,
               ),
             ),
           ),
@@ -369,16 +363,13 @@ class _DoseRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF151E2B),
+                    color: AppColors.ink,
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
                   dose.instructions,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF8A9BB0),
-                  ),
+                  style: const TextStyle(fontSize: 11, color: AppColors.ink3),
                 ),
               ],
             ),
@@ -392,13 +383,9 @@ class _DoseRow extends StatelessWidget {
               height: 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: dose.taken
-                    ? const Color(0xFF16714A)
-                    : Colors.transparent,
+                color: dose.taken ? AppColors.ok : Colors.transparent,
                 border: Border.all(
-                  color: dose.taken
-                      ? const Color(0xFF16714A)
-                      : const Color(0xFFE0E4EB),
+                  color: dose.taken ? AppColors.ok : AppColors.border,
                   width: 2,
                 ),
               ),
@@ -423,7 +410,7 @@ class _CourseProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
@@ -443,11 +430,11 @@ class _CourseProgressCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF151E2B),
+                color: AppColors.ink,
               ),
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE0E4EB)),
+          Divider(height: 1, color: AppColors.border),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -463,15 +450,15 @@ class _CourseProgressCard extends StatelessWidget {
                 final valueStr =
                     '${day.takenDoses} / ${day.totalDoses}${isComplete ? ' ✓' : ''}';
                 final valueColor = isComplete
-                    ? const Color(0xFF16714A)
+                    ? AppColors.ok
                     : day.isToday
-                    ? const Color(0xFF151E2B)
-                    : const Color(0xFF8A9BB0);
+                    ? AppColors.ink
+                    : AppColors.ink3;
                 final barColor = isComplete
-                    ? const Color(0xFF16714A)
+                    ? AppColors.ok
                     : day.isToday
-                    ? const Color(0xFFA05C00)
-                    : const Color(0xFFE0E4EB);
+                    ? AppColors.warn
+                    : AppColors.border;
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -485,13 +472,13 @@ class _CourseProgressCard extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF44556A),
+                              color: AppColors.ink2,
                             ),
                           ),
                           Text(
                             valueStr,
                             style: TextStyle(
-                              fontFamily: 'monospace',
+                              fontFamily: 'DMMono',
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                               color: valueColor,
@@ -505,7 +492,7 @@ class _CourseProgressCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 5,
-                          backgroundColor: const Color(0xFFE6E9EE),
+                          backgroundColor: AppColors.bg2,
                           valueColor: AlwaysStoppedAnimation<Color>(barColor),
                         ),
                       ),
@@ -513,48 +500,6 @@ class _CourseProgressCard extends StatelessWidget {
                   ),
                 );
               }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Doctor note info box ────────────────────────────────────────────────────
-
-class _DoctorNoteBox extends StatelessWidget {
-  final String note;
-  const _DoctorNoteBox({required this.note});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F4FB),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFA8D4ED)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "DOCTOR'S INSTRUCTIONS",
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A7FC1),
-              letterSpacing: 0.07 * 10,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            note,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF44556A),
-              height: 1.6,
             ),
           ),
         ],
@@ -573,7 +518,7 @@ class _PastPrescriptionsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
@@ -591,7 +536,7 @@ class _PastPrescriptionsCard extends StatelessWidget {
             decoration: BoxDecoration(
               border: isLast
                   ? null
-                  : const Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+                  : Border(bottom: BorderSide(color: AppColors.border)),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             child: Row(
@@ -605,7 +550,7 @@ class _PastPrescriptionsCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF151E2B),
+                          color: AppColors.ink,
                         ),
                       ),
                       const SizedBox(height: 1),
@@ -613,73 +558,19 @@ class _PastPrescriptionsCard extends StatelessWidget {
                         item.summary,
                         style: const TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF8A9BB0),
+                          color: AppColors.ink3,
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 12),
-                const _StatusChip(label: 'Done', type: _ChipType.ok),
+                // ── Uses shared AppStatusChip ──
+                const AppStatusChip(label: 'Done', status: AppStatus.ok),
               ],
             ),
           );
         }),
-      ),
-    );
-  }
-}
-
-// ── Shared status chip ──────────────────────────────────────────────────────
-
-enum _ChipType { ok, warn, err, neutral, accent }
-
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final _ChipType type;
-
-  const _StatusChip({required this.label, required this.type});
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg, fg, border;
-    switch (type) {
-      case _ChipType.ok:
-        bg = const Color(0xFFEAFAF2);
-        fg = const Color(0xFF16714A);
-        border = const Color(0xFF96DEBB);
-      case _ChipType.warn:
-        bg = const Color(0xFFFFF7EA);
-        fg = const Color(0xFFA05C00);
-        border = const Color(0xFFF5C97A);
-      case _ChipType.err:
-        bg = const Color(0xFFFFF2F2);
-        fg = const Color(0xFFB81C24);
-        border = const Color(0xFFF5AAAA);
-      case _ChipType.accent:
-        bg = const Color(0xFFE8F4FB);
-        fg = const Color(0xFF1A7FC1);
-        border = const Color(0xFFA8D4ED);
-      case _ChipType.neutral:
-        bg = const Color(0xFFE6E9EE);
-        fg = const Color(0xFF44556A);
-        border = const Color(0xFFE0E4EB);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: border),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
       ),
     );
   }

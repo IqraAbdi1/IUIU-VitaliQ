@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
+import '../shared/widgets.dart';
 import 'symptom_submission_sheet.dart';
 
 // ─────────────────────────────────────────────
@@ -114,9 +115,9 @@ class _QueueSubmissionScreenState extends State<QueueSubmissionScreen> {
 
   // Countdown color: green → amber → red
   Color get _countdownColor {
-    if (_remaining.inMinutes >= 15) return const Color(0xFF16714A);
-    if (_remaining.inMinutes >= 5) return const Color(0xFFA05C00);
-    return const Color(0xFFB81C24);
+    if (_remaining.inMinutes >= 15) return AppColors.ok;
+    if (_remaining.inMinutes >= 5) return AppColors.warn;
+    return AppColors.err;
   }
 
   void _handleCancel() {
@@ -156,7 +157,7 @@ class _QueueSubmissionScreenState extends State<QueueSubmissionScreen> {
             child: const Text(
               'Yes, cancel',
               style: TextStyle(
-                color: Color(0xFFB81C24),
+                color: AppColors.err,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -230,15 +231,15 @@ class _QueueSubmissionScreenState extends State<QueueSubmissionScreen> {
                   const SizedBox(height: 14),
 
                   // ── Submission details card ───────────────
-                  _SectionLabel('Your Submission'),
+                  AppSectionHeader(title: 'Your Submission'),
                   const SizedBox(height: 8),
                   _SubmissionDetailsCard(submission: _submission),
                   const SizedBox(height: 20),
 
                   // ── Queue progress steps ──────────────────
-                  _SectionLabel('Your Progress'),
+                  AppSectionHeader(title: 'Your Progress'),
                   const SizedBox(height: 8),
-                  _QueueStepsCard(),
+                  const _QueueStepsCard(),
                   const SizedBox(height: 28),
 
                   // ── Action buttons ────────────────────────
@@ -254,7 +255,7 @@ class _QueueSubmissionScreenState extends State<QueueSubmissionScreen> {
                   _ActionButton(
                     label: 'Cancel My Slot',
                     icon: Icons.close_rounded,
-                    color: const Color(0xFFB81C24),
+                    color: AppColors.err,
                     outlined: true,
                     onTap: _editWindowOpen ? _handleCancel : null,
                     disabledReason: _editWindowOpen
@@ -318,24 +319,6 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: AppColors.ink2,
-        letterSpacing: 0.07 * 11,
-      ),
-    );
-  }
-}
-
 // ── Status hero card ─────────────────────────────────────
 
 class _StatusHeroCard extends StatelessWidget {
@@ -356,20 +339,20 @@ class _StatusHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final severityColor = mlSeverity == 'Severe'
-        ? const Color(0xFFB81C24)
+        ? AppColors.err
         : mlSeverity == 'Moderate'
-        ? const Color(0xFFA05C00)
-        : const Color(0xFF16714A);
+        ? AppColors.warn
+        : AppColors.ok;
     final severityBg = mlSeverity == 'Severe'
-        ? const Color(0xFFFFF2F2)
+        ? AppColors.errBg
         : mlSeverity == 'Moderate'
-        ? const Color(0xFFFFF7EA)
-        : const Color(0xFFEAFAF2);
+        ? AppColors.warnBg
+        : AppColors.okBg;
     final severityBorder = mlSeverity == 'Severe'
-        ? const Color(0xFFF5AAAA)
+        ? AppColors.errBorder
         : mlSeverity == 'Moderate'
-        ? const Color(0xFFF5C97A)
-        : const Color(0xFF96DEBB);
+        ? AppColors.warnBorder
+        : AppColors.okBorder;
 
     return Container(
       decoration: BoxDecoration(
@@ -414,45 +397,20 @@ class _StatusHeroCard extends StatelessWidget {
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
-                      fontFamily: 'monospace',
+                      fontFamily: 'DMMono',
                       letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
-              // ML severity chip
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: severityBg,
-                  borderRadius: BorderRadius.circular(50),
-                  border: Border.all(color: severityBorder),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: severityColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      mlSeverity,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: severityColor,
-                      ),
-                    ),
-                  ],
-                ),
+              // ML severity chip — uses AppStatusChip from shared/widgets.dart
+              AppStatusChip(
+                label: mlSeverity,
+                status: mlSeverity == 'Severe'
+                    ? AppStatus.err
+                    : mlSeverity == 'Moderate'
+                    ? AppStatus.warn
+                    : AppStatus.ok,
               ),
             ],
           ),
@@ -463,13 +421,17 @@ class _StatusHeroCard extends StatelessWidget {
               _HeroStat(
                 label: 'Position',
                 value: '#$queueNumber',
-                color: const Color(0xFF7ECFF5),
+                color: const Color(
+                  0xFF7ECFF5,
+                ), // heroStatBlue — AppColors.heroStatBlue
               ),
               const SizedBox(width: 10),
               _HeroStat(
                 label: 'Ahead of you',
                 value: '${queueNumber - 1}',
-                color: const Color(0xFFFFBE50),
+                color: const Color(
+                  0xFFFFBE50,
+                ), // heroStatAmber — AppColors.heroStatAmber
               ),
               const SizedBox(width: 10),
               _HeroStat(
@@ -524,7 +486,7 @@ class _HeroStat extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: color,
-                fontFamily: 'monospace',
+                fontFamily: 'DMMono',
               ),
             ),
           ],
@@ -553,20 +515,20 @@ class _EditWindowBanner extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF2F2),
+          color: AppColors.errBg,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFF5AAAA)),
+          border: Border.all(color: AppColors.errBorder),
         ),
         child: Row(
           children: const [
-            Icon(Icons.lock_clock_outlined, size: 16, color: Color(0xFFB81C24)),
+            Icon(Icons.lock_clock_outlined, size: 16, color: AppColors.err),
             SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Edit window has closed. Contact the clinic to make changes.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFFB81C24),
+                  color: AppColors.err,
                   height: 1.5,
                 ),
               ),
@@ -579,18 +541,18 @@ class _EditWindowBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F4FB),
+        color: AppColors.accentLight,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFA8D4ED)),
+        border: Border.all(color: AppColors.accentMid),
       ),
       child: Row(
         children: [
           const Icon(Icons.edit_outlined, size: 16, color: AppColors.accent),
           const SizedBox(width: 10),
-          Expanded(
+          const Expanded(
             child: Text(
               'You can edit or cancel your submission for:',
-              style: const TextStyle(fontSize: 12, color: AppColors.ink2),
+              style: TextStyle(fontSize: 12, color: AppColors.ink2),
             ),
           ),
           const SizedBox(width: 8),
@@ -600,7 +562,7 @@ class _EditWindowBanner extends StatelessWidget {
               fontSize: 15,
               fontWeight: FontWeight.w800,
               color: countdownColor,
-              fontFamily: 'monospace',
+              fontFamily: 'DMMono',
             ),
           ),
         ],
@@ -673,7 +635,7 @@ class _DetailRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+            : const Border(bottom: BorderSide(color: AppColors.border)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -741,7 +703,7 @@ class _QueueStepsCard extends StatelessWidget {
               child: Container(
                 height: 2,
                 margin: const EdgeInsets.only(bottom: 18),
-                color: isDone ? AppColors.accent : const Color(0xFFE0E4EB),
+                color: isDone ? AppColors.accent : AppColors.border,
               ),
             );
           }
@@ -761,12 +723,12 @@ class _QueueStepsCard extends StatelessWidget {
                   color: isDone
                       ? AppColors.accent
                       : isCurrent
-                      ? const Color(0xFFE8F4FB)
+                      ? AppColors.accentLight
                       : AppColors.surface,
                   border: Border.all(
                     color: isDone || isCurrent
                         ? AppColors.accent
-                        : const Color(0xFFE0E4EB),
+                        : AppColors.border,
                     width: 2,
                   ),
                 ),
@@ -842,14 +804,14 @@ class _ActionButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
               color: disabled
-                  ? const Color(0xFFE0E4EB)
+                  ? AppColors.border
                   : outlined
                   ? Colors.transparent
                   : color,
               borderRadius: BorderRadius.circular(12),
               border: outlined
                   ? Border.all(
-                      color: disabled ? const Color(0xFFE0E4EB) : color,
+                      color: disabled ? AppColors.border : color,
                       width: 1.5,
                     )
                   : null,

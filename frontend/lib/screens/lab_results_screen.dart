@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../shared/widgets.dart';
 
 // ─────────────────────────────────────────────
 // MOCK DATA  — Backend: GET /api/v1/lab-results?patient_id={id}
@@ -179,7 +180,7 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
                 _SummaryChip(
                   label: 'Awaiting',
                   value: '${pending.length}',
-                  color: const Color(0xFFA05C00),
+                  color: AppColors.warn,
                 ),
               ],
             ),
@@ -188,7 +189,12 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
 
         // ── Pending ────────────────────────────────────────
         if (pending.isNotEmpty) ...[
-          const _SliverSectionLabel(label: 'Awaiting Results'),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: AppSectionHeader(title: 'Awaiting Results'),
+            ),
+          ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             sliver: SliverList(
@@ -205,7 +211,12 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
 
         // ── Ready ──────────────────────────────────────────
         if (ready.isNotEmpty) ...[
-          const _SliverSectionLabel(label: 'Results Ready'),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: AppSectionHeader(title: 'Results Ready'),
+            ),
+          ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 30),
             sliver: SliverList(
@@ -231,29 +242,6 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
 // ─────────────────────────────────────────────
 // WIDGETS
 // ─────────────────────────────────────────────
-
-class _SliverSectionLabel extends StatelessWidget {
-  final String label;
-  const _SliverSectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-        child: Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink2,
-            letterSpacing: 0.07 * 11,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _SummaryChip extends StatelessWidget {
   final String label;
@@ -299,7 +287,7 @@ class _SummaryChip extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: color,
-                    fontFamily: 'monospace',
+                    fontFamily: 'DMMono',
                   ),
                 ),
                 Text(
@@ -332,7 +320,7 @@ class _PendingCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: const Border(
-          left: BorderSide(color: Color(0xFFF5C97A), width: 3.5),
+          left: BorderSide(color: AppColors.warnBorder, width: 3.5),
         ),
         boxShadow: const [
           BoxShadow(
@@ -352,13 +340,13 @@ class _PendingCard extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF7EA),
+                color: AppColors.warnBg,
                 borderRadius: BorderRadius.circular(9),
               ),
               child: const Icon(
                 Icons.science_outlined,
                 size: 16,
-                color: Color(0xFFA05C00),
+                color: AppColors.warn,
               ),
             ),
             const SizedBox(width: 12),
@@ -380,28 +368,14 @@ class _PendingCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.ink3,
-                      fontFamily: 'monospace',
+                      fontFamily: 'DMMono',
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7EA),
-                      borderRadius: BorderRadius.circular(50),
-                      border: Border.all(color: const Color(0xFFF5C97A)),
-                    ),
-                    child: const Text(
-                      'Awaiting Results',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFA05C00),
-                      ),
-                    ),
+                  // Pending status chip
+                  AppStatusChip(
+                    label: 'Awaiting Results',
+                    status: AppStatus.warn,
                   ),
                 ],
               ),
@@ -428,16 +402,15 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Does this result have any flagged rows?
     final hasCritical = result.rows.any(
       (r) => r.flag == _FlagStatus.flagPositive,
     );
     final hasAbnormal = result.rows.any((r) => r.flag != _FlagStatus.normal);
 
     final borderColor = hasCritical
-        ? const Color(0xFFF5AAAA)
+        ? AppColors.errBorder
         : hasAbnormal
-        ? const Color(0xFFF5C97A)
+        ? AppColors.warnBorder
         : AppColors.ink3;
 
     return Container(
@@ -488,13 +461,22 @@ class _ResultCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.ink3,
-                            fontFamily: 'monospace',
+                            fontFamily: 'DMMono',
                           ),
                         ),
                         const SizedBox(height: 6),
-                        _ResultReadyChip(
-                          hasCritical: hasCritical,
-                          hasAbnormal: hasAbnormal,
+                        // Result status chip
+                        AppStatusChip(
+                          label: hasCritical
+                              ? 'Abnormal Result'
+                              : hasAbnormal
+                              ? 'Out of Range'
+                              : 'All Normal',
+                          status: hasCritical
+                              ? AppStatus.err
+                              : hasAbnormal
+                              ? AppStatus.warn
+                              : AppStatus.ok,
                         ),
                       ],
                     ),
@@ -525,11 +507,11 @@ class _ResultCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Divider
-                Container(height: 1, color: const Color(0xFFE0E4EB)),
+                Container(height: 1, color: AppColors.border),
 
                 // Lab table header
                 Container(
-                  color: const Color(0xFFF8F9FB),
+                  color: AppColors.surface2,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 7,
@@ -549,39 +531,15 @@ class _ResultCard extends StatelessWidget {
                   return _LabTableRow(row: entry.value, isLast: isLast);
                 }),
 
-                // Notes box
+                // Notes box — uses AppInfoBox from shared/widgets.dart
                 if (result.notes != null) ...[
-                  const Divider(height: 1, color: Color(0xFFE0E4EB)),
-                  Container(
-                    margin: const EdgeInsets.all(12),
+                  Container(height: 1, color: AppColors.border),
+                  Padding(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F4FB),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFA8D4ED)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "DOCTOR'S NOTES",
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
-                            letterSpacing: 0.07 * 10,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          result.notes!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.ink2,
-                            height: 1.6,
-                          ),
-                        ),
-                      ],
+                    child: AppInfoBox(
+                      label: "Doctor's Notes",
+                      body: result.notes!,
+                      variant: AppInfoVariant.accent,
                     ),
                   ),
                 ],
@@ -594,76 +552,11 @@ class _ResultCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 10.5,
                       color: AppColors.ink3,
-                      fontFamily: 'monospace',
+                      fontFamily: 'DMMono',
                     ),
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ResultReadyChip extends StatelessWidget {
-  final bool hasCritical;
-  final bool hasAbnormal;
-  const _ResultReadyChip({
-    required this.hasCritical,
-    required this.hasAbnormal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (hasCritical) {
-      return _chip(
-        'Abnormal Result',
-        const Color(0xFFB81C24),
-        const Color(0xFFFFF2F2),
-        const Color(0xFFF5AAAA),
-      );
-    } else if (hasAbnormal) {
-      return _chip(
-        'Out of Range',
-        const Color(0xFFA05C00),
-        const Color(0xFFFFF7EA),
-        const Color(0xFFF5C97A),
-      );
-    } else {
-      return _chip(
-        'All Normal',
-        const Color(0xFF16714A),
-        const Color(0xFFEAFAF2),
-        const Color(0xFF96DEBB),
-      );
-    }
-  }
-
-  Widget _chip(String label, Color fg, Color bg, Color border) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: fg,
             ),
           ),
         ],
@@ -703,7 +596,7 @@ class _LabTableRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+            : const Border(bottom: BorderSide(color: AppColors.border)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -739,15 +632,15 @@ class _LabTableRow extends StatelessWidget {
         return const TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w700,
-          color: Color(0xFFB81C24),
-          fontFamily: 'monospace',
+          color: AppColors.err,
+          fontFamily: 'DMMono',
         );
       case _FlagStatus.flagLow:
         return const TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w700,
-          color: Color(0xFFA05C00),
-          fontFamily: 'monospace',
+          color: AppColors.warn,
+          fontFamily: 'DMMono',
         );
       case _FlagStatus.flagNegative:
       case _FlagStatus.normal:
@@ -755,7 +648,7 @@ class _LabTableRow extends StatelessWidget {
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
-          fontFamily: 'monospace',
+          fontFamily: 'DMMono',
         );
     }
   }

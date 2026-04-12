@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
+import '../shared/widgets.dart';
 
-// ---------------------------------------------------------------------------
-// DATA MODELS
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ── Visit History ────────────────────────────────────────────────────────────
 // Backend: GET /api/v1/visits?patient_id={id}
@@ -10,11 +12,11 @@ import 'package:flutter/material.dart';
 enum VisitStatus { complete, pending }
 
 class LabResultRow {
-  final String testName;
-  final String result;
-  final String reference;
-  final bool isFlagged; // red
-  final bool isWarning; // amber
+  final String testName; // Backend: lab_result.test_name
+  final String result; // Backend: lab_result.result_value
+  final String reference; // Backend: lab_result.reference_range
+  final bool isFlagged; // Backend: lab_result.flag == 'H' or positive
+  final bool isWarning; // Backend: lab_result.flag == 'L'
 
   const LabResultRow({
     required this.testName,
@@ -26,13 +28,13 @@ class LabResultRow {
 }
 
 class VisitRecord {
-  final String visitId; // visit.visit_id
-  final String diagnosis; // consultation.confirmed_symptoms
-  final String date; // visit.created_at (formatted)
-  final String doctorName; // e.g. "Dr. Kato"
-  final VisitStatus status; // visit.status
-  final String? notes; // consultation.diagnostic_notes
-  final List<LabResultRow> labResults;
+  final String visitId; // Backend: visit.visit_id
+  final String diagnosis; // Backend: consultation.confirmed_symptoms
+  final String date; // Backend: visit.created_at (formatted)
+  final String doctorName; // Backend: doctor.full_name
+  final VisitStatus status; // Backend: visit.status
+  final String? notes; // Backend: consultation.diagnostic_notes
+  final List<LabResultRow> labResults; // Backend: lab_result.result_data[]
 
   const VisitRecord({
     required this.visitId,
@@ -49,11 +51,11 @@ class VisitRecord {
 // Backend: GET /api/v1/vitals?patient_id={id}&visit_id={id}
 
 class VitalReading {
-  final String label; // e.g. "Temp"
-  final String value; // e.g. "38.7"
-  final String unit; // e.g. "°C"
-  final bool isHigh;
-  final bool isLow;
+  final String label; // Backend: vital.label
+  final String value; // Backend: vital.value
+  final String unit; // Backend: vital.unit
+  final bool isHigh; // Backend: derived from vital.flag
+  final bool isLow; // Backend: derived from vital.flag
 
   const VitalReading({
     required this.label,
@@ -65,10 +67,10 @@ class VitalReading {
 }
 
 class TempBarEntry {
-  final String day; // e.g. "M"
-  final double tempC; // raw value for bar height calculation
-  final bool isNormal; // green
-  final bool isHigh; // red
+  final String day; // Backend: derived from vital.recorded_at
+  final double tempC; // Backend: vital.value (temperature)
+  final bool isNormal; // Backend: derived from vital.flag
+  final bool isHigh; // Backend: derived from vital.flag
 
   const TempBarEntry({
     required this.day,
@@ -79,10 +81,10 @@ class TempBarEntry {
 }
 
 class VisitFrequencyEntry {
-  final String period; // e.g. "Mar 2025"
-  final int count;
-  final double fraction; // 0.0–1.0 for bar width
-  final Color barColor;
+  final String period; // Backend: derived from visit.created_at
+  final int count; // Backend: count of visits in period
+  final double fraction; // Backend: derived — count / max count
+  final Color barColor; // Backend: derived from visit severity
 
   const VisitFrequencyEntry({
     required this.period,
@@ -98,10 +100,10 @@ class VisitFrequencyEntry {
 enum ConditionFlag { monitor, seasonal, resolved }
 
 class RecurringCondition {
-  final String name;
-  final String detail; // e.g. "3 confirmed episodes"
-  final ConditionFlag flag;
-  final IconData icon;
+  final String name; // Backend: condition.name
+  final String detail; // Backend: derived — episode count + type
+  final ConditionFlag flag; // Backend: condition.flag
+  final IconData icon; // Backend: derived from condition.type
 
   const RecurringCondition({
     required this.name,
@@ -111,9 +113,9 @@ class RecurringCondition {
   });
 }
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // MOCK DATA
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 const _mockVisits = [
   VisitRecord(
@@ -186,25 +188,25 @@ final _mockFrequency = [
     period: 'Mar 2025',
     count: 1,
     fraction: 0.5,
-    barColor: const Color(0xFFB81C24),
+    barColor: AppColors.err,
   ),
   VisitFrequencyEntry(
     period: 'Jan 2025',
     count: 1,
     fraction: 0.5,
-    barColor: const Color(0xFF1A7FC1),
+    barColor: AppColors.accent,
   ),
   VisitFrequencyEntry(
     period: 'Oct 2024',
     count: 1,
     fraction: 0.5,
-    barColor: const Color(0xFF1A7FC1),
+    barColor: AppColors.accent,
   ),
   VisitFrequencyEntry(
     period: 'Jun 2024',
     count: 2,
     fraction: 1.0,
-    barColor: const Color(0xFFA05C00),
+    barColor: AppColors.warn,
   ),
 ];
 
@@ -227,9 +229,9 @@ const _mockMonitoringNote =
     'Given your recurring malaria history, report any fever above 38°C immediately. '
     'Haemoglobin levels are being monitored — follow up in 2 weeks.';
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // SCREEN
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 class MyHealthScreen extends StatefulWidget {
   const MyHealthScreen({super.key});
@@ -246,18 +248,17 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Sub-tab bar (the .ftabs from prototype) ──────────────────────
         _SubTabBar(
           tabs: _tabs,
           selectedIndex: _tabIndex,
           onTap: (i) => setState(() => _tabIndex = i),
         ),
-
-        // ── Tab content ──────────────────────────────────────────────────
         Expanded(
           child: IndexedStack(
             index: _tabIndex,
+            sizing: StackFit.expand,
             children: const [
               _VisitHistoryTab(),
               _VitalsTab(),
@@ -270,9 +271,10 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // SUB-TAB BAR
-// ---------------------------------------------------------------------------
+// Fix: width: double.infinity + no horizontal margin so background reaches edges
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _SubTabBar extends StatelessWidget {
   final List<String> tabs;
@@ -288,13 +290,14 @@ class _SubTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: List.generate(tabs.length, (i) {
             final isActive = i == selectedIndex;
@@ -310,13 +313,11 @@ class _SubTabBar extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFFE8F4FB)
-                        : const Color(0xFFF8F9FB),
+                        ? AppColors.accentLight
+                        : AppColors.surface2,
                     borderRadius: BorderRadius.circular(50),
                     border: Border.all(
-                      color: isActive
-                          ? const Color(0xFF1A7FC1)
-                          : const Color(0xFFE0E4EB),
+                      color: isActive ? AppColors.accent : AppColors.border,
                       width: 1.5,
                     ),
                   ),
@@ -325,9 +326,7 @@ class _SubTabBar extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
-                      color: isActive
-                          ? const Color(0xFF1A7FC1)
-                          : const Color(0xFF44556A),
+                      color: isActive ? AppColors.accent : AppColors.ink2,
                     ),
                   ),
                 ),
@@ -340,9 +339,9 @@ class _SubTabBar extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // TAB 1 — VISIT HISTORY
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _VisitHistoryTab extends StatelessWidget {
   const _VisitHistoryTab();
@@ -363,17 +362,16 @@ class _VisitCard extends StatelessWidget {
   const _VisitCard({required this.visit});
 
   Color get _accentColor {
-    if (visit.status == VisitStatus.pending) return const Color(0xFFA05C00);
-    if (visit.labResults.any((r) => r.isFlagged))
-      return const Color(0xFF1A7FC1);
-    return const Color(0xFF8A9BB0);
+    if (visit.status == VisitStatus.pending) return AppColors.warn;
+    if (visit.labResults.any((r) => r.isFlagged)) return AppColors.accent;
+    return AppColors.ink3;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border(left: BorderSide(color: _accentColor, width: 3.5)),
         boxShadow: const [
@@ -402,36 +400,44 @@ class _VisitCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF151E2B),
+                          color: AppColors.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '${visit.date} · ${visit.doctorName}',
                         style: const TextStyle(
-                          fontFamily: 'monospace',
+                          fontFamily: 'DMMono',
                           fontSize: 11,
-                          color: Color(0xFF8A9BB0),
+                          color: AppColors.ink3,
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 10),
-                _StatusChip(status: visit.status),
+                // ── Uses shared AppStatusChip ──
+                AppStatusChip(
+                  label: visit.status == VisitStatus.pending
+                      ? 'Pending'
+                      : 'Complete',
+                  status: visit.status == VisitStatus.pending
+                      ? AppStatus.warn
+                      : AppStatus.ok,
+                ),
               ],
             ),
           ),
           // Notes
           if (visit.notes != null) ...[
-            const Divider(height: 1, color: Color(0xFFE0E4EB)),
+            Divider(height: 1, color: AppColors.border),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
               child: Text(
                 visit.notes!,
                 style: const TextStyle(
                   fontSize: 12.5,
-                  color: Color(0xFF44556A),
+                  color: AppColors.ink2,
                   height: 1.6,
                 ),
               ),
@@ -440,7 +446,7 @@ class _VisitCard extends StatelessWidget {
           // Lab table
           if (visit.labResults.isNotEmpty) ...[
             Container(
-              color: const Color(0xFFF8F9FB),
+              color: AppColors.surface2,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: const Text(
                 'LAB RESULTS',
@@ -448,7 +454,7 @@ class _VisitCard extends StatelessWidget {
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: Color(0xFF8A9BB0),
+                  color: AppColors.ink3,
                 ),
               ),
             ),
@@ -467,11 +473,10 @@ class _LabTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF8F9FB),
+      color: AppColors.surface2,
       padding: const EdgeInsets.only(bottom: 4),
       child: Column(
         children: [
-          // Headers
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Row(
@@ -482,10 +487,10 @@ class _LabTable extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE0E4EB)),
+          Divider(height: 1, color: AppColors.border),
           ...List.generate(
             rows.length,
-            (i) => _LabRow(row: rows[i], isLast: i == rows.length - 1),
+            (i) => _LabRowWidget(row: rows[i], isLast: i == rows.length - 1),
           ),
         ],
       ),
@@ -496,26 +501,27 @@ class _LabTable extends StatelessWidget {
 class _TH extends StatelessWidget {
   final String text;
   const _TH(this.text);
+
   @override
   Widget build(BuildContext context) => Text(
     text,
     style: const TextStyle(
       fontSize: 10,
       fontWeight: FontWeight.w700,
-      color: Color(0xFF8A9BB0),
+      color: AppColors.ink3,
     ),
   );
 }
 
-class _LabRow extends StatelessWidget {
+class _LabRowWidget extends StatelessWidget {
   final LabResultRow row;
   final bool isLast;
-  const _LabRow({required this.row, required this.isLast});
+  const _LabRowWidget({required this.row, required this.isLast});
 
   Color get _resultColor {
-    if (row.isFlagged) return const Color(0xFFB81C24);
-    if (row.isWarning) return const Color(0xFFA05C00);
-    return const Color(0xFF151E2B);
+    if (row.isFlagged) return AppColors.err;
+    if (row.isWarning) return AppColors.warn;
+    return AppColors.ink;
   }
 
   @override
@@ -524,7 +530,7 @@ class _LabRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+            : Border(bottom: BorderSide(color: AppColors.border)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -532,7 +538,7 @@ class _LabRow extends StatelessWidget {
           Expanded(
             child: Text(
               row.testName,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF151E2B)),
+              style: const TextStyle(fontSize: 12, color: AppColors.ink),
             ),
           ),
           SizedBox(
@@ -543,6 +549,7 @@ class _LabRow extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: _resultColor,
+                fontFamily: 'DMMono',
               ),
             ),
           ),
@@ -550,7 +557,11 @@ class _LabRow extends StatelessWidget {
             width: 56,
             child: Text(
               row.reference,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF8A9BB0)),
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.ink3,
+                fontFamily: 'DMMono',
+              ),
             ),
           ),
         ],
@@ -559,37 +570,9 @@ class _LabRow extends StatelessWidget {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  final VisitStatus status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final isPending = status == VisitStatus.pending;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: isPending ? const Color(0xFFFFF7EA) : const Color(0xFFEAFAF2),
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(
-          color: isPending ? const Color(0xFFF5C97A) : const Color(0xFF96DEBB),
-        ),
-      ),
-      child: Text(
-        isPending ? 'Pending' : 'Complete',
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: isPending ? const Color(0xFFA05C00) : const Color(0xFF16714A),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // TAB 2 — VITALS & TRENDS
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _VitalsTab extends StatelessWidget {
   const _VitalsTab();
@@ -599,29 +582,26 @@ class _VitalsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
-        _SectionLabel('Current Vitals · Mar 8'),
+        // ── Uses shared AppSectionHeader ──
+        const AppSectionHeader(title: 'Current Vitals · Mar 8'),
         const SizedBox(height: 8),
-        // Vitals grid
         Row(
-          children: _mockVitals
-              .map(
-                (v) => Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      right: v == _mockVitals.last ? 0 : 10,
-                    ),
-                    child: _VitalCard(vital: v),
-                  ),
-                ),
-              )
-              .toList(),
+          children: _mockVitals.asMap().entries.map((e) {
+            final isLast = e.key == _mockVitals.length - 1;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: isLast ? 0 : 10),
+                child: _VitalCard(vital: e.value),
+              ),
+            );
+          }).toList(),
         ),
         const SizedBox(height: 18),
-        _SectionLabel('Temperature This Week'),
+        const AppSectionHeader(title: 'Temperature This Week'),
         const SizedBox(height: 8),
         _TempChart(bars: _mockTempBars),
         const SizedBox(height: 18),
-        _SectionLabel('Visit Frequency'),
+        const AppSectionHeader(title: 'Visit Frequency'),
         const SizedBox(height: 8),
         _FrequencyCard(entries: _mockFrequency),
         const SizedBox(height: 24),
@@ -635,9 +615,9 @@ class _VitalCard extends StatelessWidget {
   const _VitalCard({required this.vital});
 
   Color get _valueColor {
-    if (vital.isHigh) return const Color(0xFFB81C24);
-    if (vital.isLow) return const Color(0xFFA05C00);
-    return const Color(0xFF151E2B);
+    if (vital.isHigh) return AppColors.err;
+    if (vital.isLow) return AppColors.warn;
+    return AppColors.ink;
   }
 
   @override
@@ -645,7 +625,7 @@ class _VitalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(10),
         boxShadow: const [
           BoxShadow(
@@ -663,14 +643,14 @@ class _VitalCard extends StatelessWidget {
               fontSize: 9.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.07 * 9.5,
-              color: Color(0xFF8A9BB0),
+              color: AppColors.ink3,
             ),
           ),
           const SizedBox(height: 5),
           Text(
             vital.value,
             style: TextStyle(
-              fontFamily: 'monospace',
+              fontFamily: 'DMMono',
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: _valueColor,
@@ -679,7 +659,7 @@ class _VitalCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             vital.unit,
-            style: const TextStyle(fontSize: 9.5, color: Color(0xFF8A9BB0)),
+            style: const TextStyle(fontSize: 9.5, color: AppColors.ink3),
           ),
         ],
       ),
@@ -692,9 +672,9 @@ class _TempChart extends StatelessWidget {
   const _TempChart({required this.bars});
 
   Color _barColor(TempBarEntry e) {
-    if (e.isHigh) return const Color(0xFFB81C24);
-    if (e.isNormal) return const Color(0xFF16714A);
-    return const Color(0xFFF5A623);
+    if (e.isHigh) return AppColors.err;
+    if (e.isNormal) return AppColors.ok;
+    return const Color(0xFFF5A623); // amber mid — not a status token, kept raw
   }
 
   // Normalise temp to bar height: range 36°–39° → 0–70px
@@ -708,7 +688,7 @@ class _TempChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
@@ -724,50 +704,48 @@ class _TempChart extends StatelessWidget {
             height: 80,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: bars
-                  .map(
-                    (e) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              height: _height(e.tempC).clamp(8.0, 70.0),
-                              decoration: BoxDecoration(
-                                color: _barColor(e).withValues(alpha: 0.85),
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(3),
-                                ),
-                              ),
+              children: bars.map((e) {
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          height: _height(e.tempC).clamp(8.0, 70.0),
+                          decoration: BoxDecoration(
+                            color: _barColor(e).withValues(alpha: 0.85),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(3),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              e.day,
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 8.5,
-                                color: Color(0xFF8A9BB0),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          e.day,
+                          style: const TextStyle(
+                            fontFamily: 'DMMono',
+                            fontSize: 8.5,
+                            color: AppColors.ink3,
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                  .toList(),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 '36.1°',
                 style: TextStyle(
-                  fontFamily: 'monospace',
+                  fontFamily: 'DMMono',
                   fontSize: 10,
-                  color: Color(0xFF8A9BB0),
+                  color: AppColors.ink3,
                 ),
               ),
               Text(
@@ -775,7 +753,7 @@ class _TempChart extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFB81C24),
+                  color: AppColors.err,
                 ),
               ),
               Text(
@@ -783,7 +761,7 @@ class _TempChart extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF16714A),
+                  color: AppColors.ok,
                 ),
               ),
             ],
@@ -803,7 +781,7 @@ class _FrequencyCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
@@ -814,61 +792,59 @@ class _FrequencyCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        children: entries
-            .map(
-              (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 72,
-                      child: Text(
-                        e.period,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF151E2B),
-                        ),
-                      ),
+        children: entries.map((e) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    e.period,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
                     ),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: e.fraction,
-                          minHeight: 6,
-                          backgroundColor: const Color(0xFFE6E9EE),
-                          valueColor: AlwaysStoppedAnimation<Color>(e.barColor),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                      width: 14,
-                      child: Text(
-                        '${e.count}',
-                        textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF8A9BB0),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            )
-            .toList(),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: e.fraction,
+                      minHeight: 6,
+                      backgroundColor: AppColors.bg2,
+                      valueColor: AlwaysStoppedAnimation<Color>(e.barColor),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 14,
+                  child: Text(
+                    '${e.count}',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontFamily: 'DMMono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // TAB 3 — MONITORING
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _MonitoringTab extends StatelessWidget {
   const _MonitoringTab();
@@ -878,11 +854,17 @@ class _MonitoringTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
-        _SectionLabel('Recurring Conditions'),
+        // ── Uses shared AppSectionHeader ──
+        const AppSectionHeader(title: 'Recurring Conditions'),
         const SizedBox(height: 8),
         _ConditionsCard(conditions: _mockConditions),
         const SizedBox(height: 12),
-        _DoctorNoteBox(note: _mockMonitoringNote),
+        // ── Uses shared AppInfoBox ──
+        const AppInfoBox(
+          label: "Doctor's Monitoring Note",
+          body: _mockMonitoringNote,
+          variant: AppInfoVariant.accent,
+        ),
         const SizedBox(height: 24),
       ],
     );
@@ -897,7 +879,7 @@ class _ConditionsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
@@ -915,7 +897,7 @@ class _ConditionsCard extends StatelessWidget {
             decoration: BoxDecoration(
               border: isLast
                   ? null
-                  : const Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+                  : Border(bottom: BorderSide(color: AppColors.border)),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             child: Row(
@@ -924,10 +906,10 @@ class _ConditionsCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6E9EE),
+                    color: AppColors.bg2,
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: Icon(c.icon, size: 16, color: const Color(0xFF44556A)),
+                  child: Icon(c.icon, size: 16, color: AppColors.ink2),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -939,131 +921,37 @@ class _ConditionsCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF151E2B),
+                          color: AppColors.ink,
                         ),
                       ),
                       Text(
                         c.detail,
                         style: const TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF8A9BB0),
+                          color: AppColors.ink3,
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 10),
-                _ConditionChip(flag: c.flag),
+                // ── Uses shared AppStatusChip ──
+                AppStatusChip(
+                  label: switch (c.flag) {
+                    ConditionFlag.monitor => 'Monitor',
+                    ConditionFlag.seasonal => 'Seasonal',
+                    ConditionFlag.resolved => 'Resolved',
+                  },
+                  status: switch (c.flag) {
+                    ConditionFlag.monitor => AppStatus.err,
+                    ConditionFlag.seasonal => AppStatus.warn,
+                    ConditionFlag.resolved => AppStatus.ok,
+                  },
+                ),
               ],
             ),
           );
         }),
-      ),
-    );
-  }
-}
-
-class _ConditionChip extends StatelessWidget {
-  final ConditionFlag flag;
-  const _ConditionChip({required this.flag});
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg, fg, border;
-    final String label;
-    switch (flag) {
-      case ConditionFlag.monitor:
-        bg = const Color(0xFFFFF2F2);
-        fg = const Color(0xFFB81C24);
-        border = const Color(0xFFF5AAAA);
-        label = 'Monitor';
-      case ConditionFlag.seasonal:
-        bg = const Color(0xFFFFF7EA);
-        fg = const Color(0xFFA05C00);
-        border = const Color(0xFFF5C97A);
-        label = 'Seasonal';
-      case ConditionFlag.resolved:
-        bg = const Color(0xFFEAFAF2);
-        fg = const Color(0xFF16714A);
-        border = const Color(0xFF96DEBB);
-        label = 'Resolved';
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: border),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
-      ),
-    );
-  }
-}
-
-class _DoctorNoteBox extends StatelessWidget {
-  final String note;
-  const _DoctorNoteBox({required this.note});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F4FB),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFA8D4ED)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "DOCTOR'S MONITORING NOTE",
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A7FC1),
-              letterSpacing: 0.7,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            note,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF44556A),
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// SHARED
-// ---------------------------------------------------------------------------
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF44556A),
-        letterSpacing: 0.07 * 11,
       ),
     );
   }

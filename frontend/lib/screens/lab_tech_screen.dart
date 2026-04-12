@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../shared/widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA — replace with API call when backend is ready
-// Backend: GET /api/v1/lab-requests?status=pending   (pending tab)
-//          GET /api/v1/lab-requests?status=completed  (completed tab)
+// MODELS
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum _LabRequestStatus { urgent, pending, completed }
 
 class _LabTest {
-  final String name;
+  final String name; // Backend: lab_test.name
   final String? unit; // Backend: lab_test.unit
   final String? referenceRange; // Backend: lab_test.reference_range
-  final String? placeholder;
+  final String? placeholder; // Backend: lab_test.input_placeholder
 
   const _LabTest({
     required this.name,
@@ -79,7 +78,12 @@ class _CompletedRequest {
   });
 }
 
-// ── Pending requests mock ──────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// MOCK DATA
+// Backend: GET /api/v1/lab-requests?status=pending   (pending tab)
+//          GET /api/v1/lab-requests?status=completed  (completed tab)
+// ─────────────────────────────────────────────────────────────────────────────
+
 final List<_LabRequest> _mockPendingRequests = [
   const _LabRequest(
     requestId: 'LR-2025-042',
@@ -167,7 +171,6 @@ final List<_LabRequest> _mockPendingRequests = [
   ),
 ];
 
-// ── Completed requests mock ────────────────────────────────────────────────
 final List<_CompletedRequest> _mockCompletedRequests = [
   const _CompletedRequest(
     requestId: 'LR-2025-039',
@@ -304,8 +307,8 @@ class _SubTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          top: BorderSide(color: Color(0xFFE0E4EB)),
-          bottom: BorderSide(color: Color(0xFFE0E4EB)),
+          top: BorderSide(color: AppColors.border),
+          bottom: BorderSide(color: AppColors.border),
         ),
       ),
       child: Row(
@@ -387,7 +390,7 @@ class _PendingTab extends StatelessWidget {
               color: AppColors.ink3,
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'All caught up!',
               style: TextStyle(
                 fontSize: 15,
@@ -396,7 +399,7 @@ class _PendingTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'No pending lab requests.',
               style: TextStyle(fontSize: 13, color: AppColors.ink3),
             ),
@@ -441,9 +444,7 @@ class _PendingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUrgent = request.status == _LabRequestStatus.urgent;
-    final accentColor = isUrgent
-        ? const Color(0xFFB81C24)
-        : const Color(0xFFA05C00);
+    final accentColor = isUrgent ? AppColors.err : AppColors.warn;
 
     return Container(
       decoration: BoxDecoration(
@@ -473,7 +474,7 @@ class _PendingCard extends StatelessWidget {
                     children: [
                       Text(
                         request.tests.map((t) => t.name).join(' + '),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: AppColors.ink,
@@ -482,34 +483,37 @@ class _PendingCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         '${request.patientName} · ${request.doctorName} · ${request.requestedAt}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.ink3,
-                          fontFamily: 'monospace',
+                          fontFamily: 'DMMono',
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         request.patientId,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 10.5,
                           color: AppColors.ink3,
-                          fontFamily: 'monospace',
+                          fontFamily: 'DMMono',
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 10),
-                _StatusChip(status: request.status),
+                // ── Uses shared AppStatusChip ──
+                AppStatusChip(
+                  label: isUrgent ? 'Urgent' : 'Pending',
+                  status: isUrgent ? AppStatus.err : AppStatus.warn,
+                ),
               ],
             ),
           ),
 
-          // Divider
-          Divider(height: 1, color: Color(0xFFE0E4EB)),
+          Divider(height: 1, color: AppColors.border),
 
-          // Test list preview
+          // Test chips
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
             child: Wrap(
@@ -615,7 +619,7 @@ class _CompletedCardState extends State<_CompletedCard> {
                       children: [
                         Text(
                           widget.request.patientName,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.ink,
@@ -624,16 +628,19 @@ class _CompletedCardState extends State<_CompletedCard> {
                         const SizedBox(height: 3),
                         Text(
                           '${widget.request.patientId} · ${widget.request.requestId}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10.5,
                             color: AppColors.ink3,
-                            fontFamily: 'monospace',
+                            fontFamily: 'DMMono',
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           '${widget.request.techName} · ${widget.request.completedAt}',
-                          style: TextStyle(fontSize: 11, color: AppColors.ink3),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.ink3,
+                          ),
                         ),
                       ],
                     ),
@@ -641,7 +648,8 @@ class _CompletedCardState extends State<_CompletedCard> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const _StatusChip(status: _LabRequestStatus.completed),
+                      // ── Uses shared AppStatusChip ──
+                      const AppStatusChip(label: 'Done', status: AppStatus.ok),
                       const SizedBox(height: 6),
                       Icon(
                         _expanded
@@ -659,9 +667,8 @@ class _CompletedCardState extends State<_CompletedCard> {
 
           // Expandable results table
           if (_expanded) ...[
-            Divider(height: 1, color: Color(0xFFE0E4EB)),
+            Divider(height: 1, color: AppColors.border),
             _ResultsTable(results: widget.request.results),
-            // Notified footer
             if (widget.request.notified)
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
@@ -670,15 +677,15 @@ class _CompletedCardState extends State<_CompletedCard> {
                     Icon(
                       Icons.check_circle_rounded,
                       size: 14,
-                      color: const Color(0xFF16714A),
+                      color: AppColors.ok,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       'Doctor and patient notified · ${widget.request.completedAt}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF16714A),
+                        color: AppColors.ok,
                       ),
                     ),
                   ],
@@ -692,7 +699,9 @@ class _CompletedCardState extends State<_CompletedCard> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UPLOAD SHEET (bottom sheet)
+// UPLOAD SHEET
+// Backend: POST /api/v1/lab-results/upload
+// Payload: { lab_request_id, results: [{test_name, value, notes}] }
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _UploadSheet extends StatefulWidget {
@@ -707,14 +716,13 @@ class _UploadSheet extends StatefulWidget {
 
 class _UploadSheetState extends State<_UploadSheet> {
   late Map<String, TextEditingController> _controllers;
-  // For RDT-style boolean tests (Positive/Negative)
   late Map<String, bool?> _boolValues;
 
   final _notesController = TextEditingController();
   bool _isSubmitting = false;
 
   // Tests that use Positive/Negative toggle instead of text input
-  // Backend: this could be driven by lab_test.input_type field
+  // Backend: could be driven by lab_test.input_type field
   static const _boolTestNames = {
     'Malaria RDT',
     'Typhoid (Widal Test)',
@@ -745,11 +753,9 @@ class _UploadSheetState extends State<_UploadSheet> {
   }
 
   bool get _isValid {
-    // All boolean tests must have a selection
     for (final entry in _boolValues.entries) {
       if (entry.value == null) return false;
     }
-    // All text tests must be non-empty
     for (final c in _controllers.values) {
       if (c.text.trim().isEmpty) return false;
     }
@@ -776,7 +782,6 @@ class _UploadSheetState extends State<_UploadSheet> {
     setState(() => _isSubmitting = true);
 
     // Backend: POST /api/v1/lab-results/upload
-    // Payload: { lab_request_id, results: [{test_name, value, notes}] }
     await Future.delayed(const Duration(milliseconds: 1200));
 
     if (mounted) {
@@ -807,14 +812,14 @@ class _UploadSheetState extends State<_UploadSheet> {
                 width: 38,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Color(0xFFE0E4EB),
+                  color: AppColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
 
             // Title block
-            Text(
+            const Text(
               'Upload Results',
               style: TextStyle(
                 fontSize: 18,
@@ -825,7 +830,7 @@ class _UploadSheetState extends State<_UploadSheet> {
             const SizedBox(height: 3),
             Text(
               '${widget.request.tests.map((t) => t.name).join(' + ')} · ${widget.request.patientName}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.ink3,
                 height: 1.5,
@@ -834,11 +839,11 @@ class _UploadSheetState extends State<_UploadSheet> {
             const SizedBox(height: 6),
             Text(
               'Requested by ${widget.request.doctorName} · ${widget.request.requestedAt}',
-              style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
+              style: const TextStyle(fontSize: 11.5, color: AppColors.ink3),
             ),
 
             const SizedBox(height: 20),
-            Divider(height: 1, color: Color(0xFFE0E4EB)),
+            Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 20),
 
             // Test input fields
@@ -863,10 +868,13 @@ class _UploadSheetState extends State<_UploadSheet> {
             TextField(
               controller: _notesController,
               maxLines: 3,
-              style: TextStyle(fontSize: 13, color: AppColors.ink),
+              style: const TextStyle(fontSize: 13, color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: 'Any additional observations or flags...',
-                hintStyle: TextStyle(color: AppColors.ink3, fontSize: 12.5),
+                hintStyle: const TextStyle(
+                  color: AppColors.ink3,
+                  fontSize: 12.5,
+                ),
                 filled: true,
                 fillColor: AppColors.bg,
                 contentPadding: const EdgeInsets.symmetric(
@@ -875,15 +883,18 @@ class _UploadSheetState extends State<_UploadSheet> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Color(0xFFE0E4EB)),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Color(0xFFE0E4EB)),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: AppColors.accent, width: 1.5),
+                  borderSide: const BorderSide(
+                    color: AppColors.accent,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
@@ -939,7 +950,7 @@ class _UploadSheetState extends State<_UploadSheet> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(9),
-                    side: BorderSide(color: Color(0xFFE0E4EB)),
+                    side: BorderSide(color: AppColors.border),
                   ),
                 ),
                 child: const Text(
@@ -956,55 +967,8 @@ class _UploadSheetState extends State<_UploadSheet> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SHARED SMALL WIDGETS
+// LOCAL WIDGETS (upload sheet only — not candidates for shared/widgets.dart)
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _StatusChip extends StatelessWidget {
-  final _LabRequestStatus status;
-
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final (bg, fg, border, label) = switch (status) {
-      _LabRequestStatus.urgent => (
-        const Color(0xFFFFF2F2),
-        const Color(0xFFB81C24),
-        const Color(0xFFF5AAAA),
-        'Urgent',
-      ),
-      _LabRequestStatus.pending => (
-        const Color(0xFFFFF7EA),
-        const Color(0xFFA05C00),
-        const Color(0xFFF5C97A),
-        'Pending',
-      ),
-      _LabRequestStatus.completed => (
-        const Color(0xFFEAFAF2),
-        const Color(0xFF16714A),
-        const Color(0xFF96DEBB),
-        'Done',
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: border),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
-      ),
-    );
-  }
-}
 
 class _TestChip extends StatelessWidget {
   final String name;
@@ -1018,11 +982,11 @@ class _TestChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.bg,
         borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: Color(0xFFE0E4EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Text(
         name,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: AppColors.ink2,
@@ -1045,7 +1009,7 @@ class _ResultsTable extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.bg,
           borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: Color(0xFFE0E4EB)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           children: [
@@ -1053,46 +1017,13 @@ class _ResultsTable extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+                border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      'Test',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink3,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Result',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink3,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Ref',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink3,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
+                children: const [
+                  Expanded(flex: 3, child: _TableHeaderCell('Test')),
+                  Expanded(flex: 2, child: _TableHeaderCell('Result')),
+                  Expanded(flex: 2, child: _TableHeaderCell('Ref')),
                 ],
               ),
             ),
@@ -1103,9 +1034,9 @@ class _ResultsTable extends StatelessWidget {
               final isLast = i == results.length - 1;
 
               final resultColor = r.flag == 'H'
-                  ? const Color(0xFFB81C24)
+                  ? AppColors.err
                   : r.flag == 'L'
-                  ? const Color(0xFFA05C00)
+                  ? AppColors.warn
                   : AppColors.ink;
 
               return Container(
@@ -1117,7 +1048,7 @@ class _ResultsTable extends StatelessWidget {
                     ? null
                     : BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(color: Color(0xFFE0E4EB)),
+                          bottom: BorderSide(color: AppColors.border),
                         ),
                       ),
                 child: Row(
@@ -1126,7 +1057,10 @@ class _ResultsTable extends StatelessWidget {
                       flex: 3,
                       child: Text(
                         r.testName,
-                        style: TextStyle(fontSize: 12, color: AppColors.ink),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ),
                     Expanded(
@@ -1137,7 +1071,7 @@ class _ResultsTable extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: resultColor,
-                          fontFamily: 'monospace',
+                          fontFamily: 'DMMono',
                         ),
                       ),
                     ),
@@ -1145,10 +1079,10 @@ class _ResultsTable extends StatelessWidget {
                       flex: 2,
                       child: Text(
                         r.referenceRange ?? '—',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 10.5,
                           color: AppColors.ink3,
-                          fontFamily: 'monospace',
+                          fontFamily: 'DMMono',
                         ),
                       ),
                     ),
@@ -1163,6 +1097,24 @@ class _ResultsTable extends StatelessWidget {
   }
 }
 
+class _TableHeaderCell extends StatelessWidget {
+  final String text;
+  const _TableHeaderCell(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 9.5,
+        fontWeight: FontWeight.w700,
+        color: AppColors.ink3,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
 class _FieldLabel extends StatelessWidget {
   final String label;
 
@@ -1172,7 +1124,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label.toUpperCase(),
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 10.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.7,
@@ -1200,19 +1152,19 @@ class _TextTestField extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               'Reference: ${test.referenceRange}${test.unit != null ? ' ${test.unit}' : ''}',
-              style: TextStyle(fontSize: 10, color: AppColors.ink3),
+              style: const TextStyle(fontSize: 10, color: AppColors.ink3),
             ),
           ],
           const SizedBox(height: 6),
           TextField(
             controller: controller,
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            style: TextStyle(fontSize: 13, color: AppColors.ink),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(fontSize: 13, color: AppColors.ink),
             decoration: InputDecoration(
               hintText: test.placeholder,
-              hintStyle: TextStyle(color: AppColors.ink3, fontSize: 12.5),
+              hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 12.5),
               suffixText: test.unit,
-              suffixStyle: TextStyle(color: AppColors.ink3, fontSize: 12),
+              suffixStyle: const TextStyle(color: AppColors.ink3, fontSize: 12),
               filled: true,
               fillColor: AppColors.bg,
               contentPadding: const EdgeInsets.symmetric(
@@ -1221,15 +1173,18 @@ class _TextTestField extends StatelessWidget {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: Color(0xFFE0E4EB)),
+                borderSide: BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: Color(0xFFE0E4EB)),
+                borderSide: BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: AppColors.accent, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.accent,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -1301,15 +1256,9 @@ class _BoolOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = isPositive
-        ? const Color(0xFFB81C24)
-        : const Color(0xFF16714A);
-    final activeBg = isPositive
-        ? const Color(0xFFFFF2F2)
-        : const Color(0xFFEAFAF2);
-    final activeBorder = isPositive
-        ? const Color(0xFFF5AAAA)
-        : const Color(0xFF96DEBB);
+    final activeColor = isPositive ? AppColors.err : AppColors.ok;
+    final activeBg = isPositive ? AppColors.errBg : AppColors.okBg;
+    final activeBorder = isPositive ? AppColors.errBorder : AppColors.okBorder;
 
     return GestureDetector(
       onTap: onTap,
@@ -1320,7 +1269,7 @@ class _BoolOption extends StatelessWidget {
           color: selected ? activeBg : AppColors.bg,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: selected ? activeBorder : Color(0xFFE0E4EB),
+            color: selected ? activeBorder : AppColors.border,
             width: selected ? 1.5 : 1,
           ),
         ),

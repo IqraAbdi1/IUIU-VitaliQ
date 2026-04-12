@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 
+enum AppStatus { ok, warn, err, neutral, accent }
+
+enum AppInfoVariant { accent, warn, err }
+
 class AppColors {
+  // ── Hero stat colours (used in HomeScreen hero header) ──
+  static const heroStatBlue = Color(0xFF7ECFF5); // queue count
+  static const heroStatAmber = Color(0xFFFFBE50); // estimated wait time
+
   // Palette
   static const Color bg = Color(0xFFEEF0F4);
   static const Color bg2 = Color(0xFFE6E9EE);
@@ -40,6 +48,52 @@ class AppColors {
   static const Color err = Color(0xFFB81C24);
   static const Color errBg = Color(0xFFFFF2F2);
   static const Color errBorder = Color(0xFFF5AAAA);
+
+  // ── Status colour helpers (used by AppStatusChip + AppInfoBox) ──
+  static Color statusFg(AppStatus status) {
+    switch (status) {
+      case AppStatus.ok:
+        return ok;
+      case AppStatus.warn:
+        return warn;
+      case AppStatus.err:
+        return err;
+      case AppStatus.neutral:
+        return ink2;
+      case AppStatus.accent:
+        return accent;
+    }
+  }
+
+  static Color statusBg(AppStatus status) {
+    switch (status) {
+      case AppStatus.ok:
+        return okBg;
+      case AppStatus.warn:
+        return warnBg;
+      case AppStatus.err:
+        return errBg;
+      case AppStatus.neutral:
+        return bg2;
+      case AppStatus.accent:
+        return accentLight;
+    }
+  }
+
+  static Color statusBorder(AppStatus status) {
+    switch (status) {
+      case AppStatus.ok:
+        return okBorder;
+      case AppStatus.warn:
+        return warnBorder;
+      case AppStatus.err:
+        return errBorder;
+      case AppStatus.neutral:
+        return border;
+      case AppStatus.accent:
+        return accentMid;
+    }
+  }
 }
 
 class AppTheme {

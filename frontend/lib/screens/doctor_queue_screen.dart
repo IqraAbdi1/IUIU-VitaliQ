@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../shared/widgets.dart';
 
 // ─────────────────────────────────────────────
 // MOCK DATA — replace with API call when backend is ready
@@ -243,7 +244,7 @@ class _StatsStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  child: _StatCard(
+                  child: AppStatCard(
                     label: 'Today',
                     value: '${stats.todayTotal}',
                     sub: '${stats.todayRemaining} remaining',
@@ -252,7 +253,7 @@ class _StatsStrip extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _StatCard(
+                  child: AppStatCard(
                     label: 'In Queue',
                     value: '${stats.inQueue}',
                     sub: '${stats.urgentCount} urgent',
@@ -267,93 +268,23 @@ class _StatsStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  child: _StatCard(
+                  child: AppStatCard(
                     label: 'Pending Labs',
                     value: '${stats.pendingLabs}',
-                    valueColor: const Color(0xFFA05C00),
+                    valueColor: AppColors.warn,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _StatCard(
+                  child: AppStatCard(
                     label: 'Avg. Consult',
                     value: stats.avgConsultMin,
-                    valueColor: const Color(0xFF16714A),
+                    valueColor: AppColors.ok,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final String? sub;
-  final Color? valueColor;
-
-  const _StatCard({
-    required this.label,
-    required this.value,
-    this.sub,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink3,
-              letterSpacing: 0.07 * 9.5,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'DMMono',
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? AppColors.ink,
-              height: 1,
-            ),
-          ),
-          if (sub != null) ...[
-            const SizedBox(height: 3),
-            Text(
-              sub!,
-              style: const TextStyle(fontSize: 10.5, color: AppColors.ink3),
-            ),
-          ],
         ],
       ),
     );
@@ -383,8 +314,8 @@ class _FilterTabs extends StatelessWidget {
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          top: BorderSide(color: Color(0xFFE0E4EB)),
-          bottom: BorderSide(color: Color(0xFFE0E4EB)),
+          top: BorderSide(color: AppColors.border),
+          bottom: BorderSide(color: AppColors.border),
         ),
       ),
       child: SingleChildScrollView(
@@ -434,9 +365,9 @@ class _FilterPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFE8F4FB) : const Color(0xFFF8F9FB),
+          color: active ? AppColors.accentLight : AppColors.surface2,
           border: Border.all(
-            color: active ? AppColors.accent : const Color(0xFFE0E4EB),
+            color: active ? AppColors.accent : AppColors.border,
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(50),
@@ -469,47 +400,26 @@ class _PatientCard extends StatelessWidget {
     required this.onSkip,
   });
 
-  Color get _accentColor {
-    switch (patient.severity) {
-      case _Severity.urgent:
-        return const Color(0xFFB81C24);
-      case _Severity.moderate:
-        return const Color(0xFFA05C00);
-      case _Severity.routine:
-        return AppColors.ink3;
-    }
-  }
+  Color get _accentColor => switch (patient.severity) {
+    _Severity.urgent => AppColors.err,
+    _Severity.moderate => AppColors.warn,
+    _Severity.routine => AppColors.ink3,
+  };
 
-  (String, Color, Color, Color) get _severityChip {
-    switch (patient.severity) {
-      case _Severity.urgent:
-        return (
-          'Urgent',
-          const Color(0xFFB81C24),
-          const Color(0xFFFFF2F2),
-          const Color(0xFFF5AAAA),
-        );
-      case _Severity.moderate:
-        return (
-          'Moderate',
-          const Color(0xFFA05C00),
-          const Color(0xFFFFF7EA),
-          const Color(0xFFF5C97A),
-        );
-      case _Severity.routine:
-        return (
-          'Routine',
-          AppColors.ink2,
-          const Color(0xFFE6E9EE),
-          const Color(0xFFE0E4EB),
-        );
-    }
-  }
+  AppStatus get _chipStatus => switch (patient.severity) {
+    _Severity.urgent => AppStatus.err,
+    _Severity.moderate => AppStatus.warn,
+    _Severity.routine => AppStatus.neutral,
+  };
+
+  String get _chipLabel => switch (patient.severity) {
+    _Severity.urgent => 'Urgent',
+    _Severity.moderate => 'Moderate',
+    _Severity.routine => 'Routine',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final (chipLabel, chipFg, chipBg, chipBorder) = _severityChip;
-
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -562,25 +472,7 @@ class _PatientCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: chipBg,
-                    border: Border.all(color: chipBorder),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Text(
-                    chipLabel,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: chipFg,
-                    ),
-                  ),
-                ),
+                AppStatusChip(label: _chipLabel, status: _chipStatus),
               ],
             ),
 
@@ -594,39 +486,10 @@ class _PatientCard extends StatelessWidget {
             // — AI Assessment box (Urgent only) —
             if (patient.aiNote != null) ...[
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF2F2),
-                  border: Border.all(
-                    color: const Color(0xFFF5AAAA),
-                    width: 1.5,
-                  ),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'AI ASSESSMENT',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFB81C24),
-                        letterSpacing: 0.07 * 10,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      patient.aiNote!,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.ink2,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
+              AppInfoBox(
+                label: 'AI Assessment',
+                body: patient.aiNote!,
+                variant: AppInfoVariant.err,
               ),
             ],
 
@@ -677,9 +540,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: primary ? AppColors.accent : const Color(0xFFF8F9FB),
+          color: primary ? AppColors.accent : AppColors.surface2,
           border: Border.all(
-            color: primary ? AppColors.accent : const Color(0xFFE0E4EB),
+            color: primary ? AppColors.accent : AppColors.border,
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(50),
@@ -705,16 +568,11 @@ class _EmptyState extends StatelessWidget {
   final _Severity severity;
   const _EmptyState({required this.severity});
 
-  String get _label {
-    switch (severity) {
-      case _Severity.urgent:
-        return 'No urgent patients';
-      case _Severity.moderate:
-        return 'No moderate cases';
-      case _Severity.routine:
-        return 'No routine cases';
-    }
-  }
+  String get _label => switch (severity) {
+    _Severity.urgent => 'No urgent patients',
+    _Severity.moderate => 'No moderate cases',
+    _Severity.routine => 'No routine cases',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -773,7 +631,6 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
   bool _labRequestOpen = false;
   bool _isSubmitting = false;
 
-  // Available symptom chips (same fixed list as patient sheet)
   static const _kSymptoms = [
     'Fever',
     'Cough',
@@ -834,15 +691,13 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
       return;
     }
     setState(() => _isSubmitting = true);
-    await Future.delayed(
-      const Duration(milliseconds: 800),
-    ); // mock network delay
+    await Future.delayed(const Duration(milliseconds: 800));
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Consultation for ${widget.patient.name} completed.'),
-          backgroundColor: const Color(0xFF16714A),
+          backgroundColor: AppColors.ok,
         ),
       );
     }
@@ -867,7 +722,7 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
               width: 38,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE0E4EB),
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -905,12 +760,23 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                             ],
                           ),
                         ),
-                        _SeverityChip(severity: widget.patient.severity),
+                        AppStatusChip(
+                          label: switch (widget.patient.severity) {
+                            _Severity.urgent => 'Urgent',
+                            _Severity.moderate => 'Moderate',
+                            _Severity.routine => 'Routine',
+                          },
+                          status: switch (widget.patient.severity) {
+                            _Severity.urgent => AppStatus.err,
+                            _Severity.moderate => AppStatus.warn,
+                            _Severity.routine => AppStatus.neutral,
+                          },
+                        ),
                       ],
                     ),
 
                     const SizedBox(height: 18),
-                    const Divider(color: Color(0xFFE0E4EB), height: 1),
+                    const Divider(color: AppColors.border, height: 1),
                     const SizedBox(height: 18),
 
                     // — Patient-submitted symptoms (read-only info) —
@@ -920,8 +786,8 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8F9FB),
-                        border: Border.all(color: const Color(0xFFE0E4EB)),
+                        color: AppColors.surface2,
+                        border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(9),
                       ),
                       child: Text(
@@ -958,12 +824,10 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                             ),
                             decoration: BoxDecoration(
                               color: on
-                                  ? const Color(0xFFE8F4FB)
-                                  : const Color(0xFFF8F9FB),
+                                  ? AppColors.accentLight
+                                  : AppColors.surface2,
                               border: Border.all(
-                                color: on
-                                    ? AppColors.accent
-                                    : const Color(0xFFE0E4EB),
+                                color: on ? AppColors.accent : AppColors.border,
                                 width: 1.5,
                               ),
                               borderRadius: BorderRadius.circular(50),
@@ -1001,18 +865,18 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                           fontSize: 12.5,
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF8F9FB),
+                        fillColor: AppColors.surface2,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(9),
                           borderSide: const BorderSide(
-                            color: Color(0xFFE0E4EB),
+                            color: AppColors.border,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(9),
                           borderSide: const BorderSide(
-                            color: Color(0xFFE0E4EB),
+                            color: AppColors.border,
                             width: 1.5,
                           ),
                         ),
@@ -1040,12 +904,12 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                         ),
                         decoration: BoxDecoration(
                           color: _labRequestOpen
-                              ? const Color(0xFFE8F4FB)
-                              : const Color(0xFFF8F9FB),
+                              ? AppColors.accentLight
+                              : AppColors.surface2,
                           border: Border.all(
                             color: _labRequestOpen
                                 ? AppColors.accent
-                                : const Color(0xFFE0E4EB),
+                                : AppColors.border,
                             width: 1.5,
                           ),
                           borderRadius: BorderRadius.circular(9),
@@ -1091,8 +955,8 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8F9FB),
-                          border: Border.all(color: const Color(0xFFE0E4EB)),
+                          color: AppColors.surface2,
+                          border: Border.all(color: AppColors.border),
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: const Column(
@@ -1154,7 +1018,7 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                             gradient: LinearGradient(
                               colors: _isSubmitting
                                   ? [AppColors.ink3, AppColors.ink3]
-                                  : [AppColors.accent, const Color(0xFF155F94)],
+                                  : [AppColors.accent, AppColors.accentDark],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -1219,7 +1083,7 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(9),
                             side: const BorderSide(
-                              color: Color(0xFFE0E4EB),
+                              color: AppColors.border,
                               width: 1.5,
                             ),
                           ),
@@ -1284,9 +1148,9 @@ class _LabTestChipsState extends State<_LabTestChips> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: on ? const Color(0xFFE8F4FB) : AppColors.surface,
+              color: on ? AppColors.accentLight : AppColors.surface,
               border: Border.all(
-                color: on ? AppColors.accent : const Color(0xFFE0E4EB),
+                color: on ? AppColors.accent : AppColors.border,
                 width: 1.5,
               ),
               borderRadius: BorderRadius.circular(50),
@@ -1307,7 +1171,7 @@ class _LabTestChipsState extends State<_LabTestChips> {
 }
 
 // ─────────────────────────────────────────────
-// SHARED SHEET WIDGETS
+// DOCTOR-SPECIFIC SHEET WIDGETS
 // ─────────────────────────────────────────────
 
 class _SheetLabel extends StatelessWidget {
@@ -1356,20 +1220,14 @@ class _SheetInput extends StatelessWidget {
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 12.5),
             filled: true,
-            fillColor: const Color(0xFFF8F9FB),
+            fillColor: AppColors.surface2,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(9),
-              borderSide: const BorderSide(
-                color: Color(0xFFE0E4EB),
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: AppColors.border, width: 1.5),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(9),
-              borderSide: const BorderSide(
-                color: Color(0xFFE0E4EB),
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: AppColors.border, width: 1.5),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(9),
@@ -1379,51 +1237,6 @@ class _SheetInput extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SeverityChip extends StatelessWidget {
-  final _Severity severity;
-  const _SeverityChip({required this.severity});
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, fg, bg, border) = switch (severity) {
-      _Severity.urgent => (
-        'Urgent',
-        const Color(0xFFB81C24),
-        const Color(0xFFFFF2F2),
-        const Color(0xFFF5AAAA),
-      ),
-      _Severity.moderate => (
-        'Moderate',
-        const Color(0xFFA05C00),
-        const Color(0xFFFFF7EA),
-        const Color(0xFFF5C97A),
-      ),
-      _Severity.routine => (
-        'Routine',
-        AppColors.ink2,
-        const Color(0xFFE6E9EE),
-        const Color(0xFFE0E4EB),
-      ),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(50),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
-      ),
     );
   }
 }
