@@ -399,14 +399,15 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
-          _IconBtn(
-            onTap: () {},
-            child: const Icon(
-              Icons.menu_rounded,
-              size: 20,
-              color: AppColors.ink2,
+          if (onLogout != null)
+            _IconBtn(
+              onTap: onLogout!,
+              child: const Icon(
+                Icons.logout_rounded,
+                size: 20,
+                color: AppColors.ink2,
+              ),
             ),
-          ),
           Expanded(
             child: Text(
               title,
@@ -418,39 +419,34 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-          _IconBtn(
-            onTap: () {},
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(
-                  Icons.notifications_outlined,
-                  size: 22,
-                  color: AppColors.ink2,
-                ),
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.err,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.surface, width: 1.5),
+          if (MediaQuery.of(context).size.width < 600)
+            _IconBtn(
+              onTap: () {},
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(
+                    Icons.notifications_outlined,
+                    size: 22,
+                    color: AppColors.ink2,
+                  ),
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.err,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.surface,
+                          width: 1.5,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          if (onLogout != null)
-            _IconBtn(
-              onTap: onLogout!,
-              child: const Icon(
-                Icons.logout_rounded,
-                size: 20,
-                color: AppColors.ink2,
+                ],
               ),
             ),
         ],
