@@ -138,6 +138,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   onBellTap: () {
                     // TODO: navigate to notifications screen
                   },
+                  onLogout: () =>
+                      Navigator.of(context).pushReplacementNamed('/login'),
+                  showLogout: MediaQuery.of(context).size.width < 600,
+                  showBell: MediaQuery.of(context).size.width < 600,
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
@@ -261,13 +265,22 @@ class _HomeScreenState extends State<HomeScreen> {
 class _HeroHeader extends StatelessWidget {
   final HomeData data;
   final VoidCallback onBellTap;
+  final VoidCallback onLogout;
+  final bool showLogout;
+  final bool showBell;
 
-  const _HeroHeader({required this.data, required this.onBellTap});
+  const _HeroHeader({
+    required this.data,
+    required this.onBellTap,
+    required this.onLogout,
+    this.showLogout = true,
+    this.showBell = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 30),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.hero, AppColors.hero2, AppColors.hero3],
@@ -282,6 +295,7 @@ class _HeroHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Top row: greeting + logout ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -305,15 +319,45 @@ class _HeroHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              _NotificationBell(
-                hasUpdate: data.hasNewNotifications,
-                onTap: onBellTap,
-              ),
+              if (showLogout)
+                GestureDetector(
+                  onTap: onLogout,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                    child: const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
-          _DoctorAvailabilityChip(isAvailable: data.isDoctorAvailable),
+
+          // ── Doctor availability + bell on same row ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _DoctorAvailabilityChip(isAvailable: data.isDoctorAvailable),
+              if (showBell)
+                _NotificationBell(
+                  hasUpdate: data.hasNewNotifications,
+                  onTap: onBellTap,
+                ),
+            ],
+          ),
           const SizedBox(height: 24),
+
+          // ── Stat cards ──
           Row(
             children: [
               Expanded(
