@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../shared/widgets.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -18,10 +19,10 @@ class _AdminScreenState extends State<AdminScreen> {
         Container(
           width: double.infinity,
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             border: Border(
-              top: BorderSide(color: Color(0xFFE0E4EB)),
-              bottom: BorderSide(color: Color(0xFFE0E4EB)),
+              top: BorderSide(color: AppColors.border),
+              bottom: BorderSide(color: AppColors.border),
             ),
           ),
           child: SingleChildScrollView(
@@ -61,34 +62,34 @@ class _QueueOverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
-      children: const [
-        _SectionLabel(label: 'Queue Overview · Today'),
-        SizedBox(height: 10),
-        _EmptyCard(
+      children: [
+        const AppSectionHeader(title: 'Queue Overview · Today'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
           icon: Icons.format_list_bulleted_rounded,
           title: 'Queue stats unavailable',
           subtitle: 'Connect to GET /api/v1/queue/stats?role=admin',
         ),
-        SizedBox(height: 14),
-        _SectionLabel(label: 'Visit Trend · This Week'),
-        SizedBox(height: 10),
-        _EmptyCard(
+        const SizedBox(height: 14),
+        const AppSectionHeader(title: 'Visit Trend · This Week'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
           icon: Icons.bar_chart_rounded,
           title: 'No visit data yet',
           subtitle: 'Connect to GET /api/v1/analytics/summary',
         ),
-        SizedBox(height: 14),
-        _SectionLabel(label: 'Stock Alerts'),
-        SizedBox(height: 10),
-        _EmptyCard(
+        const SizedBox(height: 14),
+        const AppSectionHeader(title: 'Stock Alerts'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
           icon: Icons.inventory_2_rounded,
           title: 'No stock alerts',
           subtitle: 'Connect to GET /api/v1/medicines',
         ),
-        SizedBox(height: 14),
-        _SectionLabel(label: 'ML Alerts'),
-        SizedBox(height: 10),
-        _EmptyCard(
+        const SizedBox(height: 14),
+        const AppSectionHeader(title: 'ML Alerts'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
           icon: Icons.psychology_rounded,
           title: 'No ML alerts',
           subtitle: 'ML model not yet connected',
@@ -105,26 +106,26 @@ class _AnalyticsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
-      children: const [
-        _SectionLabel(label: 'Monthly Summary'),
-        SizedBox(height: 10),
-        _EmptyCard(
+      children: [
+        const AppSectionHeader(title: 'Monthly Summary'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
           icon: Icons.bar_chart_rounded,
           title: 'No analytics data yet',
           subtitle: 'Connect to GET /api/v1/analytics/summary',
         ),
-        SizedBox(height: 14),
-        _SectionLabel(label: 'Disease Distribution'),
-        SizedBox(height: 10),
-        _EmptyCard(
+        const SizedBox(height: 14),
+        const AppSectionHeader(title: 'Disease Distribution'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
           icon: Icons.pie_chart_outline_rounded,
           title: 'No disease data yet',
           subtitle: 'Connect to GET /api/v1/analytics/summary',
         ),
-        SizedBox(height: 14),
-        _SectionLabel(label: 'Top Medicine Usage'),
-        SizedBox(height: 10),
-        _EmptyCard(
+        const SizedBox(height: 14),
+        const AppSectionHeader(title: 'Top Medicine Usage'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
           icon: Icons.medication_rounded,
           title: 'No usage data yet',
           subtitle: 'Connect to GET /api/v1/medicines',
@@ -153,10 +154,10 @@ class _SubTab extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFE8F4FB) : const Color(0xFFF8F9FB),
+          color: isActive ? AppColors.accentLight : AppColors.surface2,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: isActive ? const Color(0xFF1A7FC1) : const Color(0xFFE0E4EB),
+            color: isActive ? AppColors.accent : AppColors.border,
             width: 1.5,
           ),
         ),
@@ -165,7 +166,7 @@ class _SubTab extends StatelessWidget {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
-            color: isActive ? const Color(0xFF1A7FC1) : const Color(0xFF44556A),
+            color: isActive ? AppColors.accent : AppColors.ink2,
           ),
         ),
       ),
@@ -189,21 +190,21 @@ class _EmptyCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE0E4EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 28, color: const Color(0xFF8A9BB0)),
+          Icon(icon, size: 28, color: AppColors.ink3),
           const SizedBox(height: 10),
           Text(
             title,
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF44556A),
+              color: AppColors.ink2,
             ),
           ),
           const SizedBox(height: 4),
@@ -212,30 +213,11 @@ class _EmptyCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF8A9BB0),
-              fontFamily: 'monospace',
+              color: AppColors.ink3,
+              fontFamily: 'DMMono',
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF44556A),
-        letterSpacing: 0.7,
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../shared/widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MOCK DATA — replace with API calls when backend is ready
@@ -184,25 +185,25 @@ final List<_DiseaseBreakdown> _mockDiseaseBreakdown = const [
     name: 'Malaria',
     count: 94,
     percentage: 38.0,
-    barColor: Color(0xFFA05C00),
+    barColor: AppColors.warn,
   ),
   _DiseaseBreakdown(
     name: 'URI',
     count: 58,
     percentage: 23.0,
-    barColor: Color(0xFF1A7FC1),
+    barColor: AppColors.accent,
   ),
   _DiseaseBreakdown(
     name: 'Typhoid',
     count: 31,
     percentage: 13.0,
-    barColor: Color(0xFFB81C24),
+    barColor: AppColors.err,
   ),
   _DiseaseBreakdown(
     name: 'GI / Other',
     count: 64,
     percentage: 26.0,
-    barColor: Color(0xFF8A9BB0),
+    barColor: AppColors.ink3,
   ),
 ];
 
@@ -264,8 +265,8 @@ class _SubTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          top: BorderSide(color: Color(0xFFE0E4EB)),
-          bottom: BorderSide(color: Color(0xFFE0E4EB)),
+          top: BorderSide(color: AppColors.border),
+          bottom: BorderSide(color: AppColors.border),
         ),
       ),
       child: Row(
@@ -359,40 +360,10 @@ class _InventoryTabState extends State<_InventoryTab> {
         const SizedBox(height: 14),
 
         // Section header with Add button
-        Row(
-          children: [
-            Text(
-              'INVENTORY',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink2,
-                letterSpacing: 0.7,
-              ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () => _showAddSheet(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Text(
-                  '+ Add',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        AppSectionHeader(
+          title: 'Inventory',
+          actionLabel: '+ Add',
+          onAction: () => _showAddSheet(context),
         ),
         const SizedBox(height: 10),
 
@@ -419,7 +390,7 @@ class _InventoryTabState extends State<_InventoryTab> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.bg,
-                  border: Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+                  border: Border(bottom: BorderSide(color: AppColors.border)),
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(14),
                   ),
@@ -481,11 +452,11 @@ class _InventoryTabState extends State<_InventoryTab> {
         const SizedBox(height: 14),
 
         // ML restock recommendation
-        _InfoBox(
-          type: _InfoBoxType.accent,
+        const AppInfoBox(
           label: 'ML Restock Recommendation',
           body:
               'Malaria season approaching. Data predicts 40% case increase in April. Prioritise Artemether-Lumefantrine, RDT kits, and ORS before March 25.',
+          variant: AppInfoVariant.accent,
         ),
       ],
     );
@@ -525,7 +496,7 @@ class _AnalyticsTab extends StatelessWidget {
         const SizedBox(height: 14),
 
         // Disease distribution
-        _SectionLabel(label: 'Disease Distribution'),
+        const AppSectionHeader(title: 'Disease Distribution'),
         const SizedBox(height: 10),
         _BarChartCard(
           items: _mockDiseaseBreakdown
@@ -543,7 +514,7 @@ class _AnalyticsTab extends StatelessWidget {
         const SizedBox(height: 14),
 
         // Top medicine usage
-        _SectionLabel(label: 'Top Medicine Usage'),
+        const AppSectionHeader(title: 'Top Medicine Usage'),
         const SizedBox(height: 10),
         _BarChartCard(
           items: _mockMedicineUsage
@@ -561,8 +532,8 @@ class _AnalyticsTab extends StatelessWidget {
         const SizedBox(height: 14),
 
         // ML spike alert
-        _InfoBox(
-          type: _InfoBoxType.error,
+        AppInfoBox(
+          variant: AppInfoVariant.err,
           label: 'ML Spike Alert',
           body:
               'Malaria cases up ${summary.malariaDelta.toStringAsFixed(0)}% this week. Model predicts continued rise through April. Recommend restocking Artemether and alerting campus health officer immediately.',
@@ -589,7 +560,7 @@ class _StatsStrip extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'Total Items',
                   value: stats.totalItems.toString(),
                   valueColor: AppColors.accent,
@@ -597,10 +568,10 @@ class _StatsStrip extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'Low Stock',
                   value: stats.lowStock.toString(),
-                  valueColor: const Color(0xFFA05C00),
+                  valueColor: AppColors.warn,
                 ),
               ),
             ],
@@ -611,18 +582,18 @@ class _StatsStrip extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'Out of Stock',
                   value: stats.outOfStock.toString(),
-                  valueColor: const Color(0xFFB81C24),
+                  valueColor: AppColors.err,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'Dispensed Today',
                   value: stats.dispensedToday.toString(),
-                  valueColor: const Color(0xFF16714A),
+                  valueColor: AppColors.ok,
                 ),
               ),
             ],
@@ -646,7 +617,7 @@ class _AnalyticsStatsStrip extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'Total Visits',
                   value: summary.totalVisits.toString(),
                   sub: summary.period,
@@ -655,11 +626,11 @@ class _AnalyticsStatsStrip extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'Malaria',
                   value: summary.malariaCount.toString(),
                   sub: '↑${summary.malariaDelta.toStringAsFixed(0)}%',
-                  valueColor: const Color(0xFFA05C00),
+                  valueColor: AppColors.warn,
                 ),
               ),
             ],
@@ -670,16 +641,16 @@ class _AnalyticsStatsStrip extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'Typhoid',
                   value: summary.typhoidCount.toString(),
                   sub: '↑${summary.typhoidDelta.toStringAsFixed(0)}%',
-                  valueColor: const Color(0xFFB81C24),
+                  valueColor: AppColors.err,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _StatCard(
+                child: AppStatCard(
                   label: 'URI',
                   value: summary.uriCount.toString(),
                   sub: '↓${summary.uriDelta.abs().toStringAsFixed(0)}%',
@@ -690,68 +661,6 @@ class _AnalyticsStatsStrip extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final String? sub;
-  final Color valueColor;
-
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-    this.sub,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink3,
-              letterSpacing: 0.7,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: valueColor,
-              height: 1,
-              fontFamily: 'monospace',
-            ),
-          ),
-          if (sub != null) ...[
-            const SizedBox(height: 3),
-            Text(sub!, style: TextStyle(fontSize: 10.5, color: AppColors.ink3)),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -769,9 +678,9 @@ class _MedicineRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (barColor, qtyColor) = switch (medicine.status) {
-      _StockStatus.ok => (const Color(0xFF16714A), AppColors.ink),
-      _StockStatus.low => (const Color(0xFFA05C00), const Color(0xFFA05C00)),
-      _StockStatus.out => (const Color(0xFFB81C24), const Color(0xFFB81C24)),
+      _StockStatus.ok => (AppColors.ok, AppColors.ink),
+      _StockStatus.low => (AppColors.warn, AppColors.warn),
+      _StockStatus.out => (AppColors.err, AppColors.err),
     };
 
     final fillFraction = medicine.maxQuantity > 0
@@ -783,7 +692,7 @@ class _MedicineRow extends StatelessWidget {
       decoration: isLast
           ? null
           : BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
       child: Row(
         children: [
@@ -794,14 +703,13 @@ class _MedicineRow extends StatelessWidget {
               children: [
                 Text(
                   medicine.name,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
                 ),
                 const SizedBox(height: 5),
-                // Progress bar
                 LayoutBuilder(
                   builder: (context, constraints) {
                     return Container(
@@ -924,7 +832,7 @@ class _AddMedicineSheetState extends State<_AddMedicineSheet> {
         name: _nameController.text.trim(),
         stockQuantity: qty,
         reorderLevel: reorder,
-        maxQuantity: qty, // initial stock = max for progress bar
+        maxQuantity: qty,
         status: _deriveStatus(qty, reorder),
       );
       Navigator.pop(context);
@@ -954,13 +862,13 @@ class _AddMedicineSheetState extends State<_AddMedicineSheet> {
                 width: 38,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Color(0xFFE0E4EB),
+                  color: AppColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
 
-            Text(
+            const Text(
               'Add Medicine',
               style: TextStyle(
                 fontSize: 18,
@@ -969,7 +877,7 @@ class _AddMedicineSheetState extends State<_AddMedicineSheet> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'New item will be added to the clinic inventory.',
               style: TextStyle(fontSize: 12, color: AppColors.ink3),
             ),
@@ -1040,7 +948,7 @@ class _AddMedicineSheetState extends State<_AddMedicineSheet> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(9),
-                    side: BorderSide(color: Color(0xFFE0E4EB)),
+                    side: BorderSide(color: AppColors.border),
                   ),
                 ),
                 child: const Text(
@@ -1057,7 +965,7 @@ class _AddMedicineSheetState extends State<_AddMedicineSheet> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SHARED SMALL WIDGETS
+// PHARMACY-SPECIFIC WIDGETS
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _StockChip extends StatelessWidget {
@@ -1067,58 +975,13 @@ class _StockChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, border, label) = switch (status) {
-      _StockStatus.ok => (
-        const Color(0xFFEAFAF2),
-        const Color(0xFF16714A),
-        const Color(0xFF96DEBB),
-        'OK',
-      ),
-      _StockStatus.low => (
-        const Color(0xFFFFF7EA),
-        const Color(0xFFA05C00),
-        const Color(0xFFF5C97A),
-        'Low',
-      ),
-      _StockStatus.out => (
-        const Color(0xFFFFF2F2),
-        const Color(0xFFB81C24),
-        const Color(0xFFF5AAAA),
-        'Out',
-      ),
+    final (label, chipStatus) = switch (status) {
+      _StockStatus.ok => ('OK', AppStatus.ok),
+      _StockStatus.low => ('Low', AppStatus.warn),
+      _StockStatus.out => ('Out', AppStatus.err),
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: border),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: fg),
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: AppColors.ink2,
-        letterSpacing: 0.7,
-      ),
-    );
+    return AppStatusChip(label: label, status: chipStatus);
   }
 }
 
@@ -1167,7 +1030,7 @@ class _BarChartCard extends StatelessWidget {
                       width: 96,
                       child: Text(
                         item.label,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: AppColors.ink,
@@ -1199,7 +1062,7 @@ class _BarChartCard extends StatelessWidget {
                       child: Text(
                         item.value,
                         textAlign: TextAlign.right,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.ink3,
@@ -1212,65 +1075,6 @@ class _BarChartCard extends StatelessWidget {
               ),
             )
             .toList(),
-      ),
-    );
-  }
-}
-
-enum _InfoBoxType { accent, error, warn }
-
-class _InfoBox extends StatelessWidget {
-  final _InfoBoxType type;
-  final String label;
-  final String body;
-
-  const _InfoBox({required this.type, required this.label, required this.body});
-
-  @override
-  Widget build(BuildContext context) {
-    final (bg, fg, border) = switch (type) {
-      _InfoBoxType.accent => (
-        const Color(0xFFE8F4FB),
-        const Color(0xFF1A7FC1),
-        const Color(0xFFA8D4ED),
-      ),
-      _InfoBoxType.error => (
-        const Color(0xFFFFF2F2),
-        const Color(0xFFB81C24),
-        const Color(0xFFF5AAAA),
-      ),
-      _InfoBoxType.warn => (
-        const Color(0xFFFFF7EA),
-        const Color(0xFFA05C00),
-        const Color(0xFFF5C97A),
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: border, width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: fg,
-              letterSpacing: 0.7,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            body,
-            style: TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.6),
-          ),
-        ],
       ),
     );
   }
@@ -1298,7 +1102,7 @@ class _SheetField extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.7,
@@ -1309,10 +1113,10 @@ class _SheetField extends StatelessWidget {
           TextField(
             controller: controller,
             keyboardType: keyboardType,
-            style: TextStyle(fontSize: 13, color: AppColors.ink),
+            style: const TextStyle(fontSize: 13, color: AppColors.ink),
             decoration: InputDecoration(
               hintText: placeholder,
-              hintStyle: TextStyle(color: AppColors.ink3, fontSize: 12.5),
+              hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 12.5),
               filled: true,
               fillColor: AppColors.bg,
               contentPadding: const EdgeInsets.symmetric(
@@ -1321,15 +1125,18 @@ class _SheetField extends StatelessWidget {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: Color(0xFFE0E4EB)),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: Color(0xFFE0E4EB)),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: AppColors.accent, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.accent,
+                  width: 1.5,
+                ),
               ),
             ),
           ),

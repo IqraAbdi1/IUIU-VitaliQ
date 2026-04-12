@@ -58,30 +58,14 @@ const _doctorTabs = [
     screen: DoctorQueueScreen(),
   ),
   // TODO: add DoctorLabScreen() when built
-  // _TabItem(
-  //   label: 'Lab',
-  //   icon: Icons.biotech_rounded,
-  //   screen: DoctorLabScreen(),
-  // ),
   // TODO: add ChatScreen() when built
-  // _TabItem(
-  //   label: 'Chat',
-  //   icon: Icons.chat_bubble_outline_rounded,
-  //   screen: ChatScreen(),
-  // ),
 ];
 
-// TODO: populate when screens are built
 const _labTabs = [
   _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
   // TODO: add ChatScreen() when built
-  // _TabItem(
-  //   label: 'Chat',
-  //   icon: Icons.chat_bubble_outline_rounded,
-  //   screen: ChatScreen(),
-  // ),
 ];
-// const _pharmacyTabs = [ ... ];
+
 const _pharmacyTabs = [
   _TabItem(
     label: 'Stock',
@@ -89,13 +73,8 @@ const _pharmacyTabs = [
     screen: PharmacyScreen(),
   ),
   // TODO: add ChatScreen() when built
-  // _TabItem(
-  //   label: 'Chat',
-  //   icon: Icons.chat_bubble_outline_rounded,
-  //   screen: ChatScreen(),
-  // ),
 ];
-// const _adminTabs = [ ... ];
+
 const _adminTabs = [
   _TabItem(
     label: 'Analytics',
@@ -103,11 +82,6 @@ const _adminTabs = [
     screen: AdminScreen(),
   ),
   // TODO: add ChatScreen() when built
-  // _TabItem(
-  //   label: 'Chat',
-  //   icon: Icons.chat_bubble_outline_rounded,
-  //   screen: ChatScreen(),
-  // ),
 ];
 
 // ---------------------------------------------------------------------------
@@ -138,8 +112,6 @@ class _MainShellState extends State<MainShell> {
       case 'doctor':
         _tabs = _doctorTabs;
         break;
-      // Remaining roles fall back to patient tabs until their screens are built.
-      // Uncomment each case as staff screens are added:
       case 'lab':
         _tabs = _labTabs;
         break;
@@ -198,8 +170,8 @@ class _TopBar extends StatelessWidget {
     return Container(
       height: 52,
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE0E4EB))),
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
@@ -212,7 +184,7 @@ class _TopBar extends StatelessWidget {
             child: const Icon(
               Icons.menu_rounded,
               size: 20,
-              color: Color(0xFF44556A),
+              color: AppColors.ink2,
             ),
           ),
 
@@ -224,7 +196,7 @@ class _TopBar extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF151E2B),
+                color: AppColors.ink,
               ),
             ),
           ),
@@ -240,7 +212,7 @@ class _TopBar extends StatelessWidget {
                 const Icon(
                   Icons.notifications_outlined,
                   size: 22,
-                  color: Color(0xFF44556A),
+                  color: AppColors.ink2,
                 ),
                 Positioned(
                   top: -2,
@@ -249,9 +221,9 @@ class _TopBar extends StatelessWidget {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFB81C24),
+                      color: AppColors.err,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(color: AppColors.surface, width: 1.5),
                     ),
                   ),
                 ),
@@ -277,7 +249,7 @@ class _IconBtn extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE0E4EB)),
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Center(child: child),
@@ -306,8 +278,8 @@ class _BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE0E4EB))),
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
         boxShadow: [
           BoxShadow(
             color: Color(0x0D000000),

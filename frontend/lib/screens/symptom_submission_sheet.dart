@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
+import '../shared/widgets.dart';
 
 // ─────────────────────────────────────────────
 // DATA MODEL — returned by the sheet on submit
@@ -276,23 +277,12 @@ class _SymptomSheetState extends State<_SymptomSheet> {
                           ),
                           const SizedBox(height: 18),
 
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8F4FB),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xFFA8D4ED),
-                              ),
-                            ),
-                            child: const Text(
-                              'You may edit within 30 minutes of submission. Each edit is logged. Priority is assigned by medical need — not how you describe it.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.ink2,
-                                height: 1.6,
-                              ),
-                            ),
+                          // Info box — uses AppInfoBox from shared/widgets.dart
+                          AppInfoBox(
+                            label: 'Note',
+                            body:
+                                'You may edit within 30 minutes of submission. Each edit is logged. Priority is assigned by medical need — not how you describe it.',
+                            variant: AppInfoVariant.accent,
                           ),
                           const SizedBox(height: 18),
 
@@ -317,7 +307,7 @@ class _SymptomSheetState extends State<_SymptomSheet> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   side: const BorderSide(
-                                    color: Color(0xFFE0E4EB),
+                                    color: AppColors.border,
                                     width: 1.5,
                                   ),
                                 ),
@@ -354,15 +344,15 @@ class _SymptomSheetState extends State<_SymptomSheet> {
       hintText: hint,
       hintStyle: const TextStyle(fontSize: 13, color: AppColors.ink3),
       filled: true,
-      fillColor: const Color(0xFFF8F9FB),
+      fillColor: AppColors.surface2,
       contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(9),
-        borderSide: const BorderSide(color: Color(0xFFE0E4EB), width: 1.5),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(9),
-        borderSide: const BorderSide(color: Color(0xFFE0E4EB), width: 1.5),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(9),
@@ -425,7 +415,7 @@ class _ConfirmationOverlayState extends State<_ConfirmationOverlay>
         opacity: _fade,
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF0E2035).withValues(alpha: 0.82),
+            color: AppColors.hero.withValues(alpha: 0.82),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
           ),
           child: Center(
@@ -440,13 +430,11 @@ class _ConfirmationOverlayState extends State<_ConfirmationOverlay>
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF16714A),
+                        color: AppColors.ok,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(
-                              0xFF16714A,
-                            ).withValues(alpha: 0.45),
+                            color: AppColors.ok.withValues(alpha: 0.45),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -505,7 +493,7 @@ class _SheetHandle extends StatelessWidget {
           width: 38,
           height: 4,
           decoration: BoxDecoration(
-            color: const Color(0xFFE0E4EB),
+            color: AppColors.border,
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -559,12 +547,10 @@ class _DurationPicker extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isOn
-                      ? const Color(0xFFE8F4FB)
-                      : const Color(0xFFF8F9FB),
+                  color: isOn ? AppColors.accentLight : AppColors.surface2,
                   borderRadius: BorderRadius.circular(50),
                   border: Border.all(
-                    color: isOn ? AppColors.accent : const Color(0xFFE0E4EB),
+                    color: isOn ? AppColors.accent : AppColors.border,
                     width: 1.5,
                   ),
                 ),
@@ -608,10 +594,10 @@ class _SymptomChips extends StatelessWidget {
             duration: const Duration(milliseconds: 130),
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
             decoration: BoxDecoration(
-              color: isOn ? const Color(0xFFE8F4FB) : const Color(0xFFF8F9FB),
+              color: isOn ? AppColors.accentLight : AppColors.surface2,
               borderRadius: BorderRadius.circular(50),
               border: Border.all(
-                color: isOn ? AppColors.accent : const Color(0xFFE0E4EB),
+                color: isOn ? AppColors.accent : AppColors.border,
                 width: 1.5,
               ),
             ),
@@ -652,20 +638,20 @@ class _SubmitButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
           gradient: enabled
-              ? const LinearGradient(
-                  colors: [Color(0xFF1A7FC1), Color(0xFF155F94)],
+              ? LinearGradient(
+                  colors: [AppColors.accent, AppColors.accentDark],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
               : null,
-          color: enabled ? null : const Color(0xFFE0E4EB),
+          color: enabled ? null : AppColors.border,
           borderRadius: BorderRadius.circular(12),
           boxShadow: enabled
               ? [
-                  const BoxShadow(
-                    color: Color(0x601A7FC1),
+                  BoxShadow(
+                    color: AppColors.accent.withValues(alpha: 0.38),
                     blurRadius: 24,
-                    offset: Offset(0, 6),
+                    offset: const Offset(0, 6),
                   ),
                 ]
               : null,

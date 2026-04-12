@@ -76,8 +76,6 @@ class AppStatCard extends StatelessWidget {
 // Used in: every screen — visit history, queue cards, stock rows, lab results
 // ══════════════════════════════════════════════
 
-enum AppStatus { ok, warn, err, neutral, accent }
-
 class AppStatusChip extends StatelessWidget {
   final String label;
   final AppStatus status;
@@ -134,8 +132,6 @@ class AppStatusChip extends StatelessWidget {
 // Used in: prescription instructions, doctor's monitoring note,
 //          ML alerts, AI assessment boxes, restock recommendations
 // ══════════════════════════════════════════════
-
-enum AppInfoVariant { accent, warn, err }
 
 class AppInfoBox extends StatelessWidget {
   final String label;
