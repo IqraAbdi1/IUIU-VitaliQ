@@ -10,14 +10,20 @@ import 'pharmacy_screen.dart';
 import 'admin_screen.dart';
 
 // ---------------------------------------------------------------------------
-// Tab configuration — easy to extend per role later
+// Breakpoint
+// ---------------------------------------------------------------------------
+
+const _kDesktopBreakpoint = 600.0;
+
+// ---------------------------------------------------------------------------
+// Tab configuration
 // ---------------------------------------------------------------------------
 
 class _TabItem {
   final String label;
   final IconData icon;
   final Widget screen;
-  final bool showTopBar; // HomeScreen has its own hero — no topbar needed
+  final bool showTopBar;
 
   const _TabItem({
     required this.label,
@@ -32,7 +38,7 @@ const _patientTabs = [
     label: 'Home',
     icon: Icons.home_rounded,
     screen: HomeScreen(),
-    showTopBar: false, // hero header handles its own chrome
+    showTopBar: false,
   ),
   _TabItem(
     label: 'My Health',
@@ -46,7 +52,7 @@ const _patientTabs = [
   ),
   _TabItem(
     label: 'Lab',
-    icon: Icons.search_off_rounded,
+    icon: Icons.biotech_rounded,
     screen: LabResultsScreen(),
   ),
 ];
@@ -57,13 +63,10 @@ const _doctorTabs = [
     icon: Icons.format_list_bulleted_rounded,
     screen: DoctorQueueScreen(),
   ),
-  // TODO: add DoctorLabScreen() when built
-  // TODO: add ChatScreen() when built
 ];
 
 const _labTabs = [
   _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
-  // TODO: add ChatScreen() when built
 ];
 
 const _pharmacyTabs = [
@@ -72,7 +75,6 @@ const _pharmacyTabs = [
     icon: Icons.inventory_2_rounded,
     screen: PharmacyScreen(),
   ),
-  // TODO: add ChatScreen() when built
 ];
 
 const _adminTabs = [
@@ -81,7 +83,6 @@ const _adminTabs = [
     icon: Icons.bar_chart_rounded,
     screen: AdminScreen(),
   ),
-  // TODO: add ChatScreen() when built
 ];
 
 // ---------------------------------------------------------------------------
@@ -89,11 +90,8 @@ const _adminTabs = [
 // ---------------------------------------------------------------------------
 
 class MainShell extends StatefulWidget {
-  // Role passed from LoginScreen after successful auth.
-  // Used to select the correct tab set for this user type.
-  // Backend: decoded from JWT claim 'role' → 'patient' | 'doctor' | 'lab' | 'pharmacy' | 'admin'
+  // Backend: decoded from JWT claim 'role'
   final String role;
-
   const MainShell({super.key, this.role = 'patient'});
 
   @override
@@ -102,7 +100,6 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-
   late final List<_TabItem> _tabs;
 
   @override
@@ -126,39 +123,238 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
+  void _onTabTap(int i) => setState(() => _currentIndex = i);
+
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= _kDesktopBreakpoint;
     final tab = _tabs[_currentIndex];
 
+    return isDesktop
+        ? _DesktopLayout(
+            tabs: _tabs,
+            currentIndex: _currentIndex,
+            onTap: _onTabTap,
+            tab: tab,
+          )
+        : _MobileLayout(
+            tabs: _tabs,
+            currentIndex: _currentIndex,
+            onTap: _onTabTap,
+            tab: tab,
+          );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mobile layout — bottom nav (unchanged behaviour)
+// ---------------------------------------------------------------------------
+
+class _MobileLayout extends StatelessWidget {
+  final List<_TabItem> tabs;
+  final int currentIndex;
+  final void Function(int) onTap;
+  final _TabItem tab;
+
+  const _MobileLayout({
+    required this.tabs,
+    required this.currentIndex,
+    required this.onTap,
+    required this.tab,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
-        // HomeScreen hero intentionally bleeds to top — handled internally
-        // with its own padding: fromLTRB(20, 60, 20, 30)
         child: Column(
           children: [
-            // ── Topbar (hidden on Home) ──────────────────────────────────
             if (tab.showTopBar) _TopBar(title: tab.label),
-
-            // ── Screen content ───────────────────────────────────────────
             Expanded(child: tab.screen),
           ],
         ),
       ),
-
-      // ── Bottom nav ────────────────────────────────────────────────────
       bottomNavigationBar: _BottomNav(
-        tabs: _tabs,
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        tabs: tabs,
+        currentIndex: currentIndex,
+        onTap: onTap,
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Topbar widget — matches HTML .topbar exactly
-// hamburger | centered title | notification bell
+// Desktop layout — left side rail + topbar + content
+// ---------------------------------------------------------------------------
+
+class _DesktopLayout extends StatelessWidget {
+  final List<_TabItem> tabs;
+  final int currentIndex;
+  final void Function(int) onTap;
+  final _TabItem tab;
+
+  const _DesktopLayout({
+    required this.tabs,
+    required this.currentIndex,
+    required this.onTap,
+    required this.tab,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Row(
+          children: [
+            // ── Side rail ──────────────────────────────────
+            _SideRail(tabs: tabs, currentIndex: currentIndex, onTap: onTap),
+
+            // ── Vertical divider ───────────────────────────
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: AppColors.border,
+            ),
+
+            // ── Main content ───────────────────────────────
+            Expanded(
+              child: Column(
+                children: [
+                  // Topbar always shown on desktop (Home included)
+                  _TopBar(title: tab.label),
+                  Expanded(child: tab.screen),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Side rail — desktop nav
+// ---------------------------------------------------------------------------
+
+class _SideRail extends StatelessWidget {
+  final List<_TabItem> tabs;
+  final int currentIndex;
+  final void Function(int) onTap;
+
+  const _SideRail({
+    required this.tabs,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 72,
+      color: AppColors.surface,
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // App logo mark
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.accent,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Center(
+              child: Text(
+                'M',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  fontFamily: 'DMMono',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          const SizedBox(height: 12),
+          // Nav items
+          ...List.generate(tabs.length, (i) {
+            final isActive = i == currentIndex;
+            final tab = tabs[i];
+            return _RailItem(
+              icon: tab.icon,
+              label: tab.label,
+              isActive: isActive,
+              onTap: () => onTap(i),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _RailItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _RailItem({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.accentLight : Colors.transparent,
+          border: Border(
+            left: BorderSide(
+              color: isActive ? AppColors.accent : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: isActive ? AppColors.accent : AppColors.ink3,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w600,
+                color: isActive ? AppColors.accent : AppColors.ink3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Topbar
 // ---------------------------------------------------------------------------
 
 class _TopBar extends StatelessWidget {
@@ -176,7 +372,6 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
-          // Hamburger
           _IconBtn(
             onTap: () {
               // TODO: open drawer / side menu
@@ -187,8 +382,6 @@ class _TopBar extends StatelessWidget {
               color: AppColors.ink2,
             ),
           ),
-
-          // Centered title
           Expanded(
             child: Text(
               title,
@@ -200,8 +393,6 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-
-          // Notification bell with red dot
           _IconBtn(
             onTap: () {
               // TODO: open notifications sheet
@@ -259,8 +450,7 @@ class _IconBtn extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Bottom nav widget — matches HTML .tabs exactly
-// active tab: accent colour + top pip indicator
+// Bottom nav (mobile only)
 // ---------------------------------------------------------------------------
 
 class _BottomNav extends StatelessWidget {
@@ -289,8 +479,7 @@ class _BottomNav extends StatelessWidget {
         ],
       ),
       child: SafeArea(
-        top:
-            false, // only pad bottom (home indicator on iPhone / gesture bar on Android)
+        top: false,
         child: SizedBox(
           height: 60,
           child: Row(
@@ -304,7 +493,6 @@ class _BottomNav extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Top pip — active indicator matching HTML .tab-pip
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         width: isActive ? 22 : 0,
