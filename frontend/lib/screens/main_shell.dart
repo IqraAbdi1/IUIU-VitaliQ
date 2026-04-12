@@ -125,6 +125,11 @@ class _MainShellState extends State<MainShell> {
 
   void _onTabTap(int i) => setState(() => _currentIndex = i);
 
+  void _logout() {
+    // TODO: clear JWT token
+    Navigator.of(context).pushReplacementNamed('/login');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= _kDesktopBreakpoint;
@@ -136,12 +141,17 @@ class _MainShellState extends State<MainShell> {
             currentIndex: _currentIndex,
             onTap: _onTabTap,
             tab: tab,
+            onLogout: _logout,
+            onBellTap: () {
+              // TODO: open notifications sheet
+            },
           )
         : _MobileLayout(
             tabs: _tabs,
             currentIndex: _currentIndex,
             onTap: _onTabTap,
             tab: tab,
+            onLogout: _logout,
           );
   }
 }
@@ -155,12 +165,14 @@ class _MobileLayout extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
   final _TabItem tab;
+  final VoidCallback onLogout;
 
   const _MobileLayout({
     required this.tabs,
     required this.currentIndex,
     required this.onTap,
     required this.tab,
+    required this.onLogout,
   });
 
   @override
@@ -170,7 +182,7 @@ class _MobileLayout extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            if (tab.showTopBar) _TopBar(title: tab.label),
+            if (tab.showTopBar) _TopBar(title: tab.label, onLogout: onLogout),
             Expanded(child: tab.screen),
           ],
         ),
@@ -193,12 +205,16 @@ class _DesktopLayout extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
   final _TabItem tab;
+  final VoidCallback onLogout;
+  final VoidCallback onBellTap;
 
   const _DesktopLayout({
     required this.tabs,
     required this.currentIndex,
     required this.onTap,
     required this.tab,
+    required this.onLogout,
+    required this.onBellTap,
   });
 
   @override
@@ -209,7 +225,13 @@ class _DesktopLayout extends StatelessWidget {
         child: Row(
           children: [
             // ── Side rail ──────────────────────────────────
-            _SideRail(tabs: tabs, currentIndex: currentIndex, onTap: onTap),
+            _SideRail(
+              tabs: tabs,
+              currentIndex: currentIndex,
+              onTap: onTap,
+              onLogout: onLogout,
+              onBellTap: onBellTap,
+            ),
 
             // ── Vertical divider ───────────────────────────
             const VerticalDivider(
@@ -222,7 +244,6 @@ class _DesktopLayout extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  // Topbar always shown on desktop (Home included)
                   _TopBar(title: tab.label),
                   Expanded(child: tab.screen),
                 ],
@@ -243,11 +264,15 @@ class _SideRail extends StatelessWidget {
   final List<_TabItem> tabs;
   final int currentIndex;
   final void Function(int) onTap;
+  final VoidCallback onLogout;
+  final VoidCallback onBellTap;
 
   const _SideRail({
     required this.tabs,
     required this.currentIndex,
     required this.onTap,
+    required this.onLogout,
+    required this.onBellTap,
   });
 
   @override
@@ -258,9 +283,8 @@ class _SideRail extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 16),
-          // App logo mark
           Image.asset(
-            'assets/images/vitaliq_logo_no_text.png',
+            'assets/images/vitaliq_logo_no_text_ns.png',
             width: 86,
             height: 86,
             fit: BoxFit.contain,
@@ -268,7 +292,6 @@ class _SideRail extends StatelessWidget {
           const SizedBox(height: 20),
           const Divider(height: 1, thickness: 1, color: AppColors.border),
           const SizedBox(height: 12),
-          // Nav items
           ...List.generate(tabs.length, (i) {
             final isActive = i == currentIndex;
             final tab = tabs[i];
@@ -279,6 +302,22 @@ class _SideRail extends StatelessWidget {
               onTap: () => onTap(i),
             );
           }),
+          const Spacer(),
+          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          const SizedBox(height: 8),
+          _RailItem(
+            icon: Icons.notifications_outlined,
+            label: 'Alerts',
+            isActive: false,
+            onTap: onBellTap,
+          ),
+          _RailItem(
+            icon: Icons.logout_rounded,
+            label: 'Logout',
+            isActive: false,
+            onTap: onLogout,
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -346,7 +385,8 @@ class _RailItem extends StatelessWidget {
 
 class _TopBar extends StatelessWidget {
   final String title;
-  const _TopBar({required this.title});
+  final VoidCallback? onLogout;
+  const _TopBar({required this.title, this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -360,9 +400,7 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           _IconBtn(
-            onTap: () {
-              // TODO: open drawer / side menu
-            },
+            onTap: () {},
             child: const Icon(
               Icons.menu_rounded,
               size: 20,
@@ -381,9 +419,7 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           _IconBtn(
-            onTap: () {
-              // TODO: open notifications sheet
-            },
+            onTap: () {},
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -408,6 +444,15 @@ class _TopBar extends StatelessWidget {
               ],
             ),
           ),
+          if (onLogout != null)
+            _IconBtn(
+              onTap: onLogout!,
+              child: const Icon(
+                Icons.logout_rounded,
+                size: 20,
+                color: AppColors.ink2,
+              ),
+            ),
         ],
       ),
     );
