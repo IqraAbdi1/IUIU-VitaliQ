@@ -3,6 +3,7 @@ import '../theme.dart';
 import '../shared/widgets.dart';
 import 'symptom_submission_sheet.dart';
 import 'queue_submission_screen.dart';
+import 'notifications_screen.dart';
 
 // =============================================================================
 // MODELS
@@ -135,9 +136,11 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(
                 child: _HeroHeader(
                   data: _data,
-                  onBellTap: () {
-                    // TODO: navigate to notifications screen
-                  },
+                  onBellTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  ),
                   onLogout: () =>
                       Navigator.of(context).pushReplacementNamed('/login'),
                   showLogout: MediaQuery.of(context).size.width < 600,
