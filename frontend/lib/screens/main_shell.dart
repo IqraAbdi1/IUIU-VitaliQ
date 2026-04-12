@@ -285,7 +285,7 @@ class _SideRail extends StatelessWidget {
         children: [
           const SizedBox(height: 16),
           Image.asset(
-            'assets/images/vitaliq_logo_no_text_ns.png',
+            'assets/images/vitaliq_logo_no_text.png',
             width: 86,
             height: 86,
             fit: BoxFit.contain,
