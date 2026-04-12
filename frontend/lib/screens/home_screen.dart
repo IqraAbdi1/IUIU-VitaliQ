@@ -712,16 +712,38 @@ class _CheckInCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: const Icon(Icons.sick_outlined, color: Colors.white),
-      label: const Text("I'm feeling sick! Check-in"),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 17),
+        decoration: BoxDecoration(
+          color: AppColors.err,
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.err.withValues(alpha: 0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sick_outlined, color: Colors.white, size: 20),
+            SizedBox(width: 10),
+            Text(
+              "Feeling sick? Check-in",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -755,7 +777,7 @@ class _ActiveQueueCta extends StatelessWidget {
             Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
             SizedBox(width: 10),
             Text(
-              "You're in the queue",
+              "Check submission status",
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
