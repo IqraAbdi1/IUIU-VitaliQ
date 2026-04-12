@@ -259,24 +259,11 @@ class _SideRail extends StatelessWidget {
         children: [
           const SizedBox(height: 16),
           // App logo mark
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: const Center(
-              child: Text(
-                'M',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  fontFamily: 'DMMono',
-                ),
-              ),
-            ),
+          Image.asset(
+            'assets/images/vitaliq_logo_no_text.png',
+            width: 86,
+            height: 86,
+            fit: BoxFit.contain,
           ),
           const SizedBox(height: 20),
           const Divider(height: 1, thickness: 1, color: AppColors.border),
