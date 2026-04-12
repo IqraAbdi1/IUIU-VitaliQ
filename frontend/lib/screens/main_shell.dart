@@ -8,6 +8,7 @@ import 'doctor_queue_screen.dart';
 import 'lab_tech_screen.dart';
 import 'pharmacy_screen.dart';
 import 'admin_screen.dart';
+import 'notifications_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Breakpoint
@@ -142,9 +143,9 @@ class _MainShellState extends State<MainShell> {
             onTap: _onTabTap,
             tab: tab,
             onLogout: _logout,
-            onBellTap: () {
-              // TODO: open notifications sheet
-            },
+            onBellTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
           )
         : _MobileLayout(
             tabs: _tabs,
@@ -421,7 +422,9 @@ class _TopBar extends StatelessWidget {
           ),
           if (MediaQuery.of(context).size.width < 600)
             _IconBtn(
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              ),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
