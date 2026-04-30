@@ -17,15 +17,19 @@ flutter_native_splash:
   color_dark: "#0E2035"
 
   # Logo shown during native splash
-  image: assets/images/vitaliq_logo.png
-  image_dark: assets/images/vitaliq_logo.png
+  image: assets/images/vitaliq_logo_no_text_ns.png
+  image_dark: assets/images/vitaliq_logo_no_text_ns.png
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
 
   # Fill the full screen
   fullscreen: true
 
   # Android 12+ splash screen API
   android_12:
-    image: assets/images/vitaliq_logo.png
+    image: assets/images/vitaliq_logo_no_text_ns.png
     icon_background_color: "#0E2035"
-    image_dark: assets/images/vitaliq_logo.png
+    image_dark: assets/images/vitaliq_logo_no_text_ns.png
     icon_background_color_dark: "#0E2035"
+    android_gravity: center
+    ios_content_mode: scaleAspectFit
