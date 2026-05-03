@@ -1,0 +1,66 @@
+// This data can be used to create a Scenario object and save it to Hive.
+// Example: await Hive.box<Scenario>('scenarios').put(cprAdultScenario.id, cprAdultScenario);
+
+Scenario cprAdultScenario = Scenario(
+  id: 'cpr_adult',
+  categoryId: 'cpr', // Matches your existing 'cpr' category
+  titleEn: 'CPR for Adults',
+  titleAr: 'الإنعاش القلبي الرئوي للبالغين',
+  steps: [
+    {
+      'en': 'Ensure scene safety (Danger).',
+      'ar': 'تأكد من سلامة المكان (الخطر).',
+    },
+    {
+      'en': 'Check for responsiveness (Awake). If no response, call EMS immediately.',
+      'ar': 'تحقق من الاستجابة (واعٍ). إذا لم يكن هناك استجابة، اتصل بخدمات الطوارئ فوراً.',
+    },
+    {
+      'en': 'Open the airway using the head-tilt chin-lift technique.',
+      'ar': 'افتح مجرى الهواء باستخدام تقنية إمالة الرأس ورفع الذقن.',
+    },
+    {
+      'en': 'Check for breathing for no more than 10 seconds (Look, Listen, Feel). If no breathing, give 2 rescue breaths.',
+      'ar': 'تحقق من التنفس لمدة لا تزيد عن 10 ثوانٍ (انظر، استمع، اشعر). إذا لم يكن هناك تنفس، أعطِ نفسين إنقاذيين.',
+    },
+    {
+      'en': 'Begin chest compressions: Place the heel of one hand in the center of the chest, with the other hand on top. Keep arms straight and shoulders directly above hands.',
+      'ar': 'ابدأ بالضغطات الصدرية: ضع كعب يد واحدة في منتصف الصدر، واليد الأخرى فوقها. حافظ على ذراعيك مستقيمتين وكتفيك مباشرة فوق يديك.',
+    },
+    {
+      'en': 'Compress the chest about one third (1/3) of its depth, at a rate of 100-120 compressions per minute.',
+      'ar': 'اضغط على الصدر حوالي ثلث عمقه، بمعدل 100-120 ضغطة في الدقيقة.',
+    },
+    {
+      'en': 'Perform 30 compressions followed by 2 rescue breaths (30:2 ratio).',
+      'ar': 'قم بإجراء 30 ضغطة تليها نفسان إنقاذيان (نسبة 30:2).',
+    },
+    {
+      'en': 'Continue CPR until the victim starts breathing spontaneously, qualified help arrives and takes over, or you are unable to continue due to exhaustion.',
+      'ar': 'استمر في الإنعاش القلبي الرئوي حتى يبدأ المصاب في التنفس تلقائياً، أو يصل المساعدة المؤهلة وتتولى المسؤولية، أو تصبح غير قادر على الاستمرار بسبب الإرهاق.',
+    },
+  ],
+  notes: [
+    {
+      'type': 'warning',
+      'en': 'Do not interrupt compressions for more than 10 seconds.',
+      'ar': 'لا تقاطع الضغطات لأكثر من 10 ثوانٍ.',
+    },
+    {
+      'type': 'warning',
+      'en': 'You are likely to break ribs or the sternum when performing CPR correctly; continue regardless.',
+      'ar': 'من المحتمل أن تتكسر الأضلاع أو عظم القص عند إجراء الإنعاش القلبي الرئوي بشكل صحيح؛ استمر بغض النظر عن ذلك.',
+    },
+    {
+      'type': 'best_practice',
+      'en': 'Ensure full chest recoil after each compression to allow the heart to refill.',
+      'ar': 'تأكد من ارتداد الصدر بالكامل بعد كل ضغطة للسماح للقلب بالامتلاء.',
+    },
+    {
+      'type': 'info',
+      'en': 'If alone with an adult victim, call EMS immediately. If alone with a child/infant, perform 2 minutes of CPR before calling EMS.',
+      'ar': 'إذا كنت بمفردك مع بالغ مصاب، اتصل بخدمات الطوارئ فوراً. إذا كنت بمفردك مع طفل/رضيع، قم بإجراء دقيقتين من الإنعاش القلبي الرئوي قبل الاتصال بخدمات الطوارئ.',
+    },
+  ],
+  sourceUrl: 'https://en.wikibooks.org/wiki/First_Aid/CPR_summary', // Direct link to the CPR summary section
+);
