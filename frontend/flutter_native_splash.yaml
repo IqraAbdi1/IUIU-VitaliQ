@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# flutter_native_splash configuration
+# VitalIQ — IUIU Smart Medical System
+#
+# After editing this file, run from the /frontend directory:
+#   dart run flutter_native_splash:create
+#
+# To reset to defaults:
+#   dart run flutter_native_splash:remove
+# ─────────────────────────────────────────────────────────────────────────────
+
+flutter_native_splash:
+
+  # Background color — matches AppColors.hero (#0E2035) for a seamless
+  # transition into the SplashScreen widget
+  color: "#0E2035"
+  color_dark: "#0E2035"
+
+  # Logo shown during native splash
+  image: assets/images/vitaliq_logo_no_text_ns.png
+  image_dark: assets/images/vitaliq_logo_no_text_ns.png
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
+
+  # Fill the full screen
+  fullscreen: true
+
+  # Android 12+ splash screen API
+  android_12:
+    image: assets/images/vitaliq_logo_no_text_ns.png
+    icon_background_color: "#0E2035"
+    image_dark: assets/images/vitaliq_logo_no_text_ns.png
+    icon_background_color_dark: "#0E2035"
+    android_gravity: center
+    ios_content_mode: scaleAspectFit
