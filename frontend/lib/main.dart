@@ -1,13 +1,4 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import 'features/login/login_page.dart';
-
-void main() {
-  runApp(MaterialApp(
-    home: LoginPage(),
-  ));
-}
-=======
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'screens/splash_screen.dart';
 import 'theme.dart';
@@ -41,4 +32,3 @@ class VitaliqApp extends StatelessWidget {
     );
   }
 }
->>>>>>> test-pr-7
