@@ -1,0 +1,17 @@
+[
+  {"model": "patients.symptom", "pk": 1,  "fields": {"name": "Fever"}},
+  {"model": "patients.symptom", "pk": 2,  "fields": {"name": "Headache"}},
+  {"model": "patients.symptom", "pk": 3,  "fields": {"name": "Cough"}},
+  {"model": "patients.symptom", "pk": 4,  "fields": {"name": "Vomiting"}},
+  {"model": "patients.symptom", "pk": 5,  "fields": {"name": "Diarrhea"}},
+  {"model": "patients.symptom", "pk": 6,  "fields": {"name": "Body Aches"}},
+  {"model": "patients.symptom", "pk": 7,  "fields": {"name": "Sore Throat"}},
+  {"model": "patients.symptom", "pk": 8,  "fields": {"name": "Chest Pain"}},
+  {"model": "patients.symptom", "pk": 9,  "fields": {"name": "Shortness of Breath"}},
+  {"model": "patients.symptom", "pk": 10, "fields": {"name": "Fatigue"}},
+  {"model": "patients.symptom", "pk": 11, "fields": {"name": "Nausea"}},
+  {"model": "patients.symptom", "pk": 12, "fields": {"name": "Abdominal Pain"}},
+  {"model": "patients.symptom", "pk": 13, "fields": {"name": "Dizziness"}},
+  {"model": "patients.symptom", "pk": 14, "fields": {"name": "Rash"}},
+  {"model": "patients.symptom", "pk": 15, "fields": {"name": "Loss of Appetite"}}
+]
