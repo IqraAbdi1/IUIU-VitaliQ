@@ -33,6 +33,17 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Specific generated plugin files
+.flutter-plugins
+.flutter-plugins-dependencies
+/lib/generated_plugin_registrant.dart
+/lib/generated_main.dart
+
+# Platform-specific generated files
+/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+/ios/Runner/GeneratedPluginRegistrant.h
+/ios/Runner/GeneratedPluginRegistrant.m
+
 # Symbolication related
 app.*.symbols
 
