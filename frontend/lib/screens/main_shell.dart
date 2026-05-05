@@ -279,7 +279,7 @@ class _SideRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 72,
+      width: 76,
       color: AppColors.surface,
       child: Column(
         children: [
