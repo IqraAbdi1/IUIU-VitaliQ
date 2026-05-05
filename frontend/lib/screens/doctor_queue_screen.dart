@@ -85,7 +85,7 @@ class _DashStats {
 // Backend: GET /api/v1/queue/stats?role=doctor
 // ─────────────────────────────────────────────
 
-const _mockStats = _DashStats(
+final _mockStats = _DashStats(
   todayTotal: 18,
   todayRemaining: 4,
   inQueue: 11,
@@ -276,8 +276,16 @@ class DoctorQueueScreen extends StatefulWidget {
 }
 
 class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
-  // Backend: GET /api/v1/queue/stats?role=doctor
-  final _DashStats _stats = _mockStats;
+  // Derived from live queue state — Backend: GET /api/v1/queue/stats?role=doctor
+  _DashStats get _stats => _DashStats(
+    todayTotal:
+        _mockStats.todayTotal, // Backend: still static until endpoint live
+    todayRemaining: _mockStats.todayRemaining,
+    inQueue: _patients.length,
+    urgentCount: _patients.where((p) => p.severity == _Severity.urgent).length,
+    pendingLabs: _labSentIds.length,
+    avgConsultMin: _mockStats.avgConsultMin,
+  );
 
   // Backend: GET /api/v1/queue?role=doctor&status=active
   List<_QueuePatient> _patients = List.from(_mockPatients);
