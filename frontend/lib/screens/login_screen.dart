@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
     'STU-2024-0842': 'patient',
     'STAFF-DOC-001': 'doctor',
     'STAFF-LAB-002': 'lab',
-    'STAFF-PH-003': 'pharmacy',
+    'STAFF-NUR-003': 'nurse',
     'STAFF-ADM-001': 'admin',
   };
 
