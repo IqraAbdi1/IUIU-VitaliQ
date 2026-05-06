@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../shared/widgets.dart';
+import 'patient_profile_screen.dart';
 
 // =============================================================================
 // MODELS
@@ -445,7 +446,16 @@ class _NotificationCardState extends State<_NotificationCard> {
                         GestureDetector(
                           // TODO: navigate to patient profile when built
                           // Navigator.push to PatientProfileScreen(patientId)
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => PatientProfileScreen(
+                                  patientId: item.patientId,
+                                  //viewerRole: ProfileViewerRole.doctor,   <<< use this line if you want to see the profile as a doctor or any other staff.
+                                ),
+                              ),
+                            );
+                          },
                           child: Text(
                             '${item.patientName} · ${item.patientId}',
                             style: const TextStyle(
