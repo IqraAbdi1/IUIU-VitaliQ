@@ -6,7 +6,7 @@ import 'my_health_screen.dart';
 import 'prescriptions_screen.dart';
 import 'doctor_queue_screen.dart';
 import 'lab_tech_screen.dart';
-import 'pharmacy_screen.dart';
+//import 'pharmacy_screen.dart';
 import 'admin_screen.dart';
 import 'notifications_screen.dart';
 import 'nurse_screen.dart';
@@ -71,11 +71,12 @@ const _labTabs = [
   _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
 ];
 
+// mock: STAFF-NUR-003 with dispensing privilege
 const _nurseTabs = [
   _TabItem(
     label: 'Station',
     icon: Icons.medical_services_rounded,
-    screen: NurseScreen(),
+    screen: NurseScreen(canDispense: true), // flip to false for regular nurse
   ),
 ];
 
