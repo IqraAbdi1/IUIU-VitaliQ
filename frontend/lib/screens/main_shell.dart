@@ -9,6 +9,7 @@ import 'lab_tech_screen.dart';
 import 'pharmacy_screen.dart';
 import 'admin_screen.dart';
 import 'notifications_screen.dart';
+import 'nurse_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Breakpoint
@@ -70,11 +71,11 @@ const _labTabs = [
   _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
 ];
 
-const _pharmacyTabs = [
+const _nurseTabs = [
   _TabItem(
-    label: 'Stock',
-    icon: Icons.inventory_2_rounded,
-    screen: PharmacyScreen(),
+    label: 'Station',
+    icon: Icons.medical_services_rounded,
+    screen: NurseScreen(),
   ),
 ];
 
@@ -113,8 +114,8 @@ class _MainShellState extends State<MainShell> {
       case 'lab':
         _tabs = _labTabs;
         break;
-      case 'pharmacy':
-        _tabs = _pharmacyTabs;
+      case 'nurse':
+        _tabs = _nurseTabs;
         break;
       case 'admin':
         _tabs = _adminTabs;
