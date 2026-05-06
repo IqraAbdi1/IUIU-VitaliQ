@@ -10,6 +10,7 @@ import 'lab_tech_screen.dart';
 import 'admin_screen.dart';
 import 'notifications_screen.dart';
 import 'nurse_screen.dart';
+import 'staff_home_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Breakpoint
@@ -61,6 +62,12 @@ const _patientTabs = [
 
 const _doctorTabs = [
   _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'doctor', staffName: 'Dr. Staff'),
+    showTopBar: false,
+  ),
+  _TabItem(
     label: 'Queue',
     icon: Icons.format_list_bulleted_rounded,
     screen: DoctorQueueScreen(),
@@ -68,21 +75,38 @@ const _doctorTabs = [
 ];
 
 const _labTabs = [
+  _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'lab', staffName: 'Lab Staff'),
+    showTopBar: false,
+  ),
   _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
 ];
 
-// mock: STAFF-NUR-003 with dispensing privilege
 const _nurseTabs = [
+  _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'nurse', staffName: 'Nurse Staff'),
+    showTopBar: false,
+  ),
   _TabItem(
     label: 'Station',
     icon: Icons.medical_services_rounded,
-    screen: NurseScreen(canDispense: true), // flip to false for regular nurse
+    screen: NurseScreen(canDispense: true),
   ),
 ];
 
 const _adminTabs = [
   _TabItem(
-    label: 'Analytics',
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'admin', staffName: 'Admin'),
+    showTopBar: false,
+  ),
+  _TabItem(
+    label: 'Overview',
     icon: Icons.bar_chart_rounded,
     screen: AdminScreen(),
   ),
