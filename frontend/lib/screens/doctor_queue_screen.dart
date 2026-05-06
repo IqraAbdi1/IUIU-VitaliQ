@@ -1229,6 +1229,12 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
   final _notesController = TextEditingController();
   bool _isSubmitting = false;
 
+  final _bpSysController = TextEditingController();
+  final _bpDiaController = TextEditingController();
+  final _tempController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _heightController = TextEditingController();
+
   static const _kSymptoms = [
     'Fever',
     'Cough',
@@ -1260,6 +1266,11 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
   @override
   void dispose() {
     _notesController.dispose();
+    _bpSysController.dispose();
+    _bpDiaController.dispose();
+    _tempController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
     super.dispose();
   }
 
@@ -1269,6 +1280,8 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
         : _confirmedSymptoms.add(s);
   });
 
+  // Backend: POST /api/v1/consultations
+  // Body: { visit_id, confirmed_symptoms, diagnostic_notes, vitals: { bp_sys, bp_dia, temp, weight, height } }
   Future<void> _complete() async {
     if (_notesController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1418,6 +1431,77 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                         ),
                       ),
 
+                      const SizedBox(height: 16),
+                      const _SheetLabel('Vitals'),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Optional — record if measured during consultation.',
+                        style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
+                      ),
+                      const SizedBox(height: 9),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _VitalsField(
+                                label: 'BP Systolic',
+                                hint: '120',
+                                unit: 'mmHg',
+                                controller: _bpSysController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _VitalsField(
+                                label: 'BP Diastolic',
+                                hint: '80',
+                                unit: 'mmHg',
+                                controller: _bpDiaController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _VitalsField(
+                                label: 'Temperature',
+                                hint: '36.5',
+                                unit: '°C',
+                                controller: _tempController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _VitalsField(
+                                label: 'Weight',
+                                hint: '70',
+                                unit: 'kg',
+                                controller: _weightController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _VitalsField(
+                                label: 'Height',
+                                hint: '170',
+                                unit: 'cm',
+                                controller: _heightController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 22),
                       _PrimaryButton(
                         label: _isSubmitting
@@ -2175,3 +2259,71 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
   ),
   contentPadding: const EdgeInsets.all(12),
 );
+
+class _VitalsField extends StatelessWidget {
+  final String label;
+  final String hint;
+  final String unit;
+  final TextEditingController controller;
+  final TextInputType keyboardType;
+
+  const _VitalsField({
+    required this.label,
+    required this.hint,
+    required this.unit,
+    required this.controller,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink3,
+            letterSpacing: 0.4,
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontSize: 13, color: AppColors.ink),
+          decoration: InputDecoration(
+            hintText: hint,
+            suffixText: unit,
+            suffixStyle: const TextStyle(
+              fontSize: 11,
+              color: AppColors.ink3,
+              fontFamily: 'DMMono',
+            ),
+            hintStyle: const TextStyle(fontSize: 12, color: AppColors.ink3),
+            filled: true,
+            fillColor: AppColors.surface2,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 10,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9),
+              borderSide: BorderSide(color: AppColors.accent, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
