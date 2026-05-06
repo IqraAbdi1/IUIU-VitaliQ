@@ -367,6 +367,7 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
       builder: (_) => _PrescribeSheet(
         patient: patient,
         labResults: _labResultsFor(patient.queueId),
+        consultNotes: _consultNotes[patient.queueId] ?? '',
         onComplete: (prescription) =>
             _completePatient(patient.queueId, prescription),
       ),
@@ -1821,11 +1822,13 @@ class _PrescribeSheet extends StatefulWidget {
   final _QueuePatient patient;
   final List<_LabResult> labResults;
   final ValueChanged<String> onComplete; // passes prescription summary
+  final String consultNotes;
 
   const _PrescribeSheet({
     required this.patient,
     required this.labResults,
     required this.onComplete,
+    required this.consultNotes,
   });
 
   @override
@@ -2004,6 +2007,44 @@ class _PrescribeSheetState extends State<_PrescribeSheet> {
                       icon: Icons.save_rounded,
                       loading: _isSubmitting,
                       onTap: _isSubmitting ? () {} : _submit,
+                    ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () {
+                        // Backend: POST /api/v1/consultations — prescription: null
+                        widget.onComplete(
+                          widget.consultNotes.isEmpty
+                              ? ''
+                              : widget.consultNotes,
+                        );
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${widget.patient.name} completed — no prescription.',
+                            ),
+                            backgroundColor: AppColors.ok,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface2,
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: const Text(
+                          'No Prescription Needed',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink2,
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     const _CancelButton(),
