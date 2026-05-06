@@ -10,7 +10,7 @@ import '../shared/widgets.dart';
 // MODELS
 // ─────────────────────────────────────────────
 
-enum _NurseTab { queue, followUps, education }
+enum _NurseTab { queue, followUps, education, dispensing }
 
 enum _Severity { urgent, moderate, routine }
 
@@ -172,7 +172,8 @@ const _roomOptions = ['Room 1', 'Room 2', 'Room 3', 'Waiting'];
 // ─────────────────────────────────────────────
 
 class NurseScreen extends StatefulWidget {
-  const NurseScreen({super.key});
+  final bool canDispense; // Backend: decoded from JWT claim 'permissions'
+  const NurseScreen({super.key, this.canDispense = false});
 
   @override
   State<NurseScreen> createState() => _NurseScreenState();
@@ -243,6 +244,7 @@ class _NurseScreenState extends State<NurseScreen> {
             queueCount: _queue.length,
             followUpCount: _followUps.where((f) => !f.completed).length,
             educationCount: _educationNotes.length,
+            canDispense: widget.canDispense,
             onTabChanged: (t) => setState(() => _activeTab = t),
           ),
           Expanded(child: _buildBody()),
@@ -266,9 +268,45 @@ class _NurseScreenState extends State<NurseScreen> {
       notes: _educationNotes,
       onAdd: () => _showAddEducationSheet(context),
     ),
+    _NurseTab.dispensing => const _DispensingTab(),
   };
 }
 
+class _DispensingTab extends StatefulWidget {
+  const _DispensingTab();
+
+  @override
+  State<_DispensingTab> createState() => _DispensingTabState();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTORY TAB
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DispensingTabState extends State<_DispensingTab> {
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      children: [
+        const AppSectionHeader(title: 'Dispensing — Inventory'),
+        // TODO: wire + Add button when _AddMedicineSheet is shared in Phase 2
+        const SizedBox(height: 10),
+        const _EmptyState(
+          icon: Icons.inventory_2_rounded,
+          message: 'No medicines loaded',
+          sub: 'Connect to GET /api/v1/medicines',
+        ),
+        const SizedBox(height: 14),
+        const AppInfoBox(
+          label: 'ML Restock Recommendation',
+          body: 'Connect ML model to see restock recommendations.',
+          variant: AppInfoVariant.accent,
+        ),
+      ],
+    );
+  }
+}
 // ─────────────────────────────────────────────
 // STATS STRIP
 // ─────────────────────────────────────────────
@@ -345,6 +383,7 @@ class _NurseTabToggle extends StatelessWidget {
   final int queueCount;
   final int followUpCount;
   final int educationCount;
+  final bool canDispense;
   final ValueChanged<_NurseTab> onTabChanged;
 
   const _NurseTabToggle({
@@ -352,6 +391,7 @@ class _NurseTabToggle extends StatelessWidget {
     required this.queueCount,
     required this.followUpCount,
     required this.educationCount,
+    required this.canDispense,
     required this.onTabChanged,
   });
 
@@ -384,6 +424,12 @@ class _NurseTabToggle extends StatelessWidget {
             active: activeTab == _NurseTab.education,
             onTap: () => onTabChanged(_NurseTab.education),
           ),
+          if (canDispense)
+            _TabPill(
+              label: 'Dispensing',
+              active: activeTab == _NurseTab.dispensing,
+              onTap: () => onTabChanged(_NurseTab.dispensing),
+            ),
         ],
       ),
     );
