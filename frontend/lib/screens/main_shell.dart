@@ -157,6 +157,22 @@ class _MainShellState extends State<MainShell> {
     Navigator.of(context).pushReplacementNamed('/login');
   }
 
+  void _openMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AppMenu(
+        role: widget.role,
+        onSwitchToPatient: () {
+          Navigator.pop(context);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainShell(role: 'patient')),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= _kDesktopBreakpoint;
@@ -172,6 +188,7 @@ class _MainShellState extends State<MainShell> {
             onBellTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
             ),
+            onMenuTap: _openMenu,
           )
         : _MobileLayout(
             tabs: _tabs,
@@ -179,6 +196,7 @@ class _MainShellState extends State<MainShell> {
             onTap: _onTabTap,
             tab: tab,
             onLogout: _logout,
+            onMenuTap: _openMenu,
           );
   }
 }
@@ -193,6 +211,7 @@ class _MobileLayout extends StatelessWidget {
   final void Function(int) onTap;
   final _TabItem tab;
   final VoidCallback onLogout;
+  final VoidCallback onMenuTap;
 
   const _MobileLayout({
     required this.tabs,
@@ -200,6 +219,7 @@ class _MobileLayout extends StatelessWidget {
     required this.onTap,
     required this.tab,
     required this.onLogout,
+    required this.onMenuTap,
   });
 
   @override
@@ -218,6 +238,7 @@ class _MobileLayout extends StatelessWidget {
         tabs: tabs,
         currentIndex: currentIndex,
         onTap: onTap,
+        onMenuTap: onMenuTap,
       ),
     );
   }
@@ -234,6 +255,7 @@ class _DesktopLayout extends StatelessWidget {
   final _TabItem tab;
   final VoidCallback onLogout;
   final VoidCallback onBellTap;
+  final VoidCallback onMenuTap;
 
   const _DesktopLayout({
     required this.tabs,
@@ -242,6 +264,7 @@ class _DesktopLayout extends StatelessWidget {
     required this.tab,
     required this.onLogout,
     required this.onBellTap,
+    required this.onMenuTap,
   });
 
   @override
@@ -258,6 +281,7 @@ class _DesktopLayout extends StatelessWidget {
               onTap: onTap,
               onLogout: onLogout,
               onBellTap: onBellTap,
+              onMenuTap: onMenuTap,
             ),
 
             // ── Vertical divider ───────────────────────────
@@ -293,6 +317,7 @@ class _SideRail extends StatelessWidget {
   final void Function(int) onTap;
   final VoidCallback onLogout;
   final VoidCallback onBellTap;
+  final VoidCallback onMenuTap;
 
   const _SideRail({
     required this.tabs,
@@ -300,6 +325,7 @@ class _SideRail extends StatelessWidget {
     required this.onTap,
     required this.onLogout,
     required this.onBellTap,
+    required this.onMenuTap,
   });
 
   @override
@@ -337,6 +363,12 @@ class _SideRail extends StatelessWidget {
             label: 'Alerts',
             isActive: false,
             onTap: onBellTap,
+          ),
+          _RailItem(
+            icon: Icons.menu_rounded,
+            label: 'Menu',
+            isActive: false,
+            onTap: onMenuTap,
           ),
           _RailItem(
             icon: Icons.logout_rounded,
@@ -514,11 +546,13 @@ class _BottomNav extends StatelessWidget {
   final List<_TabItem> tabs;
   final int currentIndex;
   final void Function(int) onTap;
+  final VoidCallback onMenuTap;
 
   const _BottomNav({
     required this.tabs,
     required this.currentIndex,
     required this.onTap,
+    required this.onMenuTap,
   });
 
   @override
@@ -540,48 +574,186 @@ class _BottomNav extends StatelessWidget {
         child: SizedBox(
           height: 60,
           child: Row(
-            children: List.generate(tabs.length, (i) {
-              final isActive = i == currentIndex;
-              final tab = tabs[i];
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onTap(i),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: isActive ? 22 : 0,
-                        height: 3,
-                        margin: const EdgeInsets.only(bottom: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(3),
+            children: [
+              ...List.generate(tabs.length, (i) {
+                final isActive = i == currentIndex;
+                final tab = tabs[i];
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => onTap(i),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: isActive ? 22 : 0,
+                          height: 3,
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(3),
+                            ),
                           ),
                         ),
-                      ),
-                      Icon(
-                        tab.icon,
-                        size: 22,
-                        color: isActive ? AppColors.accent : AppColors.ink3,
-                      ),
-                      const SizedBox(height: 3),
+                        Icon(
+                          tab.icon,
+                          size: 22,
+                          color: isActive ? AppColors.accent : AppColors.ink3,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          tab.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isActive ? AppColors.accent : AppColors.ink3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              Expanded(
+                child: GestureDetector(
+                  onTap: onMenuTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 9),
+                      Icon(Icons.menu_rounded, size: 22, color: AppColors.ink3),
+                      SizedBox(height: 3),
                       Text(
-                        tab.label,
+                        'Menu',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: isActive ? AppColors.accent : AppColors.ink3,
+                          color: AppColors.ink3,
                         ),
                       ),
                     ],
                   ),
                 ),
-              );
-            }),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppMenu extends StatelessWidget {
+  final String role;
+  final VoidCallback onSwitchToPatient;
+
+  const _AppMenu({required this.role, required this.onSwitchToPatient});
+
+  bool get _isStaff =>
+      role == 'doctor' || role == 'nurse' || role == 'lab' || role == 'admin';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _MenuItem(
+            icon: Icons.person_outline_rounded,
+            label: 'My Profile',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: navigate to ProfileScreen
+            },
+          ),
+          _MenuItem(
+            icon: Icons.info_outline_rounded,
+            label: 'About VitalIQ',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: navigate to AboutScreen
+            },
+          ),
+          _MenuItem(
+            icon: Icons.help_outline_rounded,
+            label: 'Help & Support',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: navigate to HelpScreen
+            },
+          ),
+          if (_isStaff) ...[
+            const Divider(color: AppColors.border, height: 1),
+            _MenuItem(
+              icon: Icons.switch_account_rounded,
+              label: 'Switch to Patient View',
+              valueColor: AppColors.accent,
+              onTap: onSwitchToPatient,
+            ),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? valueColor;
+  final VoidCallback onTap;
+
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = valueColor ?? AppColors.ink;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.ink3),
+          ],
         ),
       ),
     );
