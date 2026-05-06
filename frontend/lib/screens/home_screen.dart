@@ -4,6 +4,7 @@ import '../shared/widgets.dart';
 import 'symptom_submission_sheet.dart';
 import 'queue_submission_screen.dart';
 import 'notifications_screen.dart';
+import 'patient_profile_screen.dart';
 
 // =============================================================================
 // MODELS
@@ -302,23 +303,55 @@ class _HeroHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // ── Avatar + greeting + name ──
+              Row(
                 children: [
-                  Text(
-                    'Good afternoon',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 12,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PatientProfileScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
-                  Text(
-                    data.userName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Good afternoon',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        data.userName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
