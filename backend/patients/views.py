@@ -8,8 +8,8 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from AI_ML.predictor_synthetic import predict_severity
 #from AI_ML.predictor import predict_severity
-from AI_ML.predictor import predict_severity
 
 from .models import Symptom, Visit, VisitSymptom, PatientProfile
 from .serializers import (

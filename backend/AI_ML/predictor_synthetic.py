@@ -13,7 +13,7 @@ FEATURES_PATH = os.path.join(BASE_DIR, 'AI_ML', 'models', 'feature_names.pkl')
 # ─────────────────────────────────────────────
 # LAZY LOAD
 # ─────────────────────────────────────────────
-_model        = None
+_model         = None
 _feature_names = None
 
 
@@ -37,6 +37,9 @@ ALL_SYMPTOMS = [
     'Eye Pain', 'Ear Pain', 'Joint Pain', 'Loss of Appetite',
     'Loss of Consciousness', 'Seizure', 'Confusion',
 ]
+
+# label encoder mapping
+LABELS = {0: 'MINOR', 1: 'MODERATE', 2: 'SEVERE'}
 
 
 # ─────────────────────────────────────────────
@@ -93,7 +96,13 @@ def predict_severity(selected_symptoms, free_text=None,
 
     # ── predict ──
     prediction = _model.predict(input_df)
-    severity   = prediction[0].upper()
+    raw        = prediction[0]
+
+    # handle both string and integer predictions
+    if isinstance(raw, str):
+        severity = raw.upper()
+    else:
+        severity = LABELS.get(int(raw), 'MINOR')
 
     return {
         'severity':    severity,    # MINOR, MODERATE, SEVERE
