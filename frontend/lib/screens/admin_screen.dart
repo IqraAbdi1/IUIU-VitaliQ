@@ -41,14 +41,22 @@ class _AdminScreenState extends State<AdminScreen> {
                   isActive: _tabIndex == 1,
                   onTap: () => setState(() => _tabIndex = 1),
                 ),
+                const SizedBox(width: 7),
+                _SubTab(
+                  label: 'Pharmacy',
+                  isActive: _tabIndex == 2,
+                  onTap: () => setState(() => _tabIndex = 2),
+                ),
               ],
             ),
           ),
         ),
         Expanded(
-          child: _tabIndex == 0
-              ? const _QueueOverviewTab()
-              : const _AnalyticsTab(),
+          child: switch (_tabIndex) {
+            1 => const _AnalyticsTab(),
+            2 => const _PharmacyTab(),
+            _ => const _QueueOverviewTab(),
+          },
         ),
       ],
     );
@@ -219,6 +227,111 @@ class _EmptyCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PharmacyTab extends StatefulWidget {
+  const _PharmacyTab();
+
+  @override
+  State<_PharmacyTab> createState() => _PharmacyTabState();
+}
+
+class _PharmacyTabState extends State<_PharmacyTab> {
+  int _subIndex = 0; // 0 = Inventory, 1 = Analytics
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppColors.border)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              children: [
+                _SubTab(
+                  label: 'Inventory',
+                  isActive: _subIndex == 0,
+                  onTap: () => setState(() => _subIndex = 0),
+                ),
+                const SizedBox(width: 7),
+                _SubTab(
+                  label: 'Usage Analytics',
+                  isActive: _subIndex == 1,
+                  onTap: () => setState(() => _subIndex = 1),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: _subIndex == 0
+              ? const _PharmacyInventoryTab()
+              : const _PharmacyAnalyticsTab(),
+        ),
+      ],
+    );
+  }
+}
+
+class _PharmacyInventoryTab extends StatelessWidget {
+  const _PharmacyInventoryTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
+      children: [
+        const AppSectionHeader(title: 'Stock Overview'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
+          icon: Icons.inventory_2_rounded,
+          title: 'No inventory data yet',
+          subtitle: 'Connect to GET /api/v1/medicines',
+        ),
+        const SizedBox(height: 14),
+        const AppSectionHeader(title: 'Low Stock Alerts'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
+          icon: Icons.warning_amber_rounded,
+          title: 'No low stock alerts',
+          subtitle: 'Connect to GET /api/v1/medicines?filter=low_stock',
+        ),
+      ],
+    );
+  }
+}
+
+class _PharmacyAnalyticsTab extends StatelessWidget {
+  const _PharmacyAnalyticsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
+      children: [
+        const AppSectionHeader(title: 'Top Medicine Usage'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
+          icon: Icons.medication_rounded,
+          title: 'No usage data yet',
+          subtitle: 'Connect to GET /api/v1/analytics/summary',
+        ),
+        const SizedBox(height: 14),
+        const AppSectionHeader(title: 'Dispensing Trend'),
+        const SizedBox(height: 10),
+        const _EmptyCard(
+          icon: Icons.bar_chart_rounded,
+          title: 'No dispensing data yet',
+          subtitle: 'Connect to GET /api/v1/analytics/summary',
+        ),
+      ],
     );
   }
 }

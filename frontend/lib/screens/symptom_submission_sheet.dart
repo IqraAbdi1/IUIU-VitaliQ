@@ -99,6 +99,7 @@ class _SymptomSheetState extends State<_SymptomSheet> {
 
   bool _isSubmitting = false;
   bool _showConfirmation = false;
+  SymptomSubmissionData? _submittedData;
 
   @override
   void initState() {
@@ -119,6 +120,17 @@ class _SymptomSheetState extends State<_SymptomSheet> {
 
   bool get _canSubmit => _selectedSymptoms.isNotEmpty && !_isSubmitting;
 
+  SymptomSubmissionData _buildData() => SymptomSubmissionData(
+    duration: _selectedDuration,
+    symptoms: _selectedSymptoms.toList(),
+    temperature: _tempController.text.trim().isEmpty
+        ? null
+        : _tempController.text.trim(),
+    notes: _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim(),
+  );
+
   Future<void> _handleSubmit() async {
     if (!_canSubmit) return;
     setState(() => _isSubmitting = true);
@@ -129,28 +141,25 @@ class _SymptomSheetState extends State<_SymptomSheet> {
     await Future.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
 
-    final data = SymptomSubmissionData(
-      duration: _selectedDuration,
-      symptoms: _selectedSymptoms.toList(),
-      temperature: _tempController.text.trim().isEmpty
-          ? null
-          : _tempController.text.trim(),
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
-    );
+    final data = _buildData();
+    _submittedData = data;
 
-    // Show mid-screen confirmation, then close and return data
+    // Show mid-screen confirmation overlay
+    // Auto-dismisses after 30 seconds or on tap
     setState(() {
       _isSubmitting = false;
       _showConfirmation = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(const Duration(seconds: 30));
     if (!mounted) return;
+    _dismiss();
+  }
 
+  void _dismiss() {
+    if (!mounted) return;
     Navigator.of(context).pop();
-    widget.onSubmitted(data);
+    widget.onSubmitted(_submittedData ?? _buildData());
   }
 
   @override
@@ -330,8 +339,12 @@ class _SymptomSheetState extends State<_SymptomSheet> {
               ),
 
               // ── Mid-screen confirmation overlay ────────────
+              // Dismisses on tap or after 30 seconds automatically
               if (_showConfirmation)
-                _ConfirmationOverlay(isEdit: widget.isEdit),
+                _ConfirmationOverlay(
+                  isEdit: widget.isEdit,
+                  onDismiss: _dismiss,
+                ),
             ],
           );
         },
@@ -364,11 +377,15 @@ class _SymptomSheetState extends State<_SymptomSheet> {
 
 // ─────────────────────────────────────────────
 // CONFIRMATION OVERLAY
+// Tap anywhere to dismiss early.
+// Auto-dismissed after 30s from _handleSubmit.
 // ─────────────────────────────────────────────
 
 class _ConfirmationOverlay extends StatefulWidget {
   final bool isEdit;
-  const _ConfirmationOverlay({required this.isEdit});
+  final VoidCallback onDismiss;
+
+  const _ConfirmationOverlay({required this.isEdit, required this.onDismiss});
 
   @override
   State<_ConfirmationOverlay> createState() => _ConfirmationOverlayState();
@@ -411,63 +428,77 @@ class _ConfirmationOverlayState extends State<_ConfirmationOverlay>
         : 'Head to the clinic premise\nand await your turn';
 
     return Positioned.fill(
-      child: FadeTransition(
-        opacity: _fade,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.hero.withValues(alpha: 0.82),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-          ),
-          child: Center(
-            child: ScaleTransition(
-              scale: _scale,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 36),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppColors.ok,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.ok.withValues(alpha: 0.45),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+      child: GestureDetector(
+        onTap: widget.onDismiss,
+        child: FadeTransition(
+          opacity: _fade,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.hero.withValues(alpha: 0.82),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(22),
+              ),
+            ),
+            child: Center(
+              child: ScaleTransition(
+                scale: _scale,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 36),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.ok,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.ok.withValues(alpha: 0.45),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 30,
+                      const SizedBox(height: 22),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.3,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.3,
+                      const SizedBox(height: 10),
+                      Text(
+                        body,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.white.withValues(alpha: 0.7),
+                          height: 1.6,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      body,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        height: 1.6,
+                      const SizedBox(height: 24),
+                      // Tap hint
+                      Text(
+                        'Tap anywhere to continue',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -638,7 +669,7 @@ class _SubmitButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
           gradient: enabled
-              ? LinearGradient(
+              ? const LinearGradient(
                   colors: [AppColors.accent, AppColors.accentDark],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

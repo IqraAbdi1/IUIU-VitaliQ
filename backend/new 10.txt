@@ -1,0 +1,50 @@
+bottomNavigationBar: Consumer<FavoritesProvider>(
+        builder: (context, favoritesProvider, child) {
+          return BottomNavigationBar(
+            backgroundColor: Colors.white,
+            selectedItemColor: Colors.black,
+            unselectedItemColor: Colors.grey,
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => HomePage()),
+                  );
+                  break;
+                case 1:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => BookmarkPage()),
+                  );
+                  break;
+                case 2:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => isUserRegistered ? ProfilePage() : LoginPage(),
+                    ),
+                  );
+                  break;
+              }
+            },
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: badges.Badge(
+                  badgeContent: Text(
+                    '${favoritesProvider.favorites.length}',
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                  showBadge: favoritesProvider.favorites.isNotEmpty,
+                  child: const Icon(Icons.bookmark_border),
+                ),
+              ),
+            ],
+          );
+        },
+      ),

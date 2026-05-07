@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AppStatus { ok, warn, err, neutral, accent }
+enum AppStatus { ok, warn, err, neutral, accent, urgent }
 
 enum AppInfoVariant { accent, warn, err }
 
@@ -49,6 +49,12 @@ class AppColors {
   static const Color errBg = Color(0xFFFFF2F2);
   static const Color errBorder = Color(0xFFF5AAAA);
 
+  // Status — Urgent (black set)
+  static const Color urgentFg = Color(0xFFFFFFFF);
+  static const Color urgentBg = Color(0xFF151E2B); // reuses ink
+  static const Color urgentBorder = Color(0xFF2D3F52);
+  static const Color urgentAccent = Color(0xFFFF4C4C); // red pip on black
+
   // ── Status colour helpers (used by AppStatusChip + AppInfoBox) ──
   static Color statusFg(AppStatus status) {
     switch (status) {
@@ -62,6 +68,8 @@ class AppColors {
         return ink2;
       case AppStatus.accent:
         return accent;
+      case AppStatus.urgent:
+        return urgentFg;
     }
   }
 
@@ -77,6 +85,8 @@ class AppColors {
         return bg2;
       case AppStatus.accent:
         return accentLight;
+      case AppStatus.urgent:
+        return urgentBg;
     }
   }
 
@@ -92,6 +102,8 @@ class AppColors {
         return border;
       case AppStatus.accent:
         return accentMid;
+      case AppStatus.urgent:
+        return urgentBorder;
     }
   }
 }

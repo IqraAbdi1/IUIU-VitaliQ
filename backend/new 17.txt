@@ -1,0 +1,52 @@
+<html>
+    <head>
+        <title>
+            OUR HISTORY
+        </title>
+        <style>
+            table { width: 100%;}
+            .sagri { width: 100%; margin: 0px;}
+            video { width: 100%; margin: 0px;}
+            a { text-decoration: none; font-weight: bold; }
+            .loc { width: 100%; margin: 0px;}
+        </style>
+    </head>
+    <body>
+        <table>
+            <tr>
+            <td><a href="index.html">HOME PAGE</a></td>
+            <td><a href="gallery.html">MY GALLARY</a></td>
+            <td><a href="history.html">OUR HISTORY</a></td>
+            <td><a href="contacts.html">MY CONTACTS</a></td>
+            </tr>
+        </table>
+        
+        <h2>
+            Our History
+        </h2>
+        <img class="sagri" src="sagri2.jpg">
+        
+        <p>
+          My family originates from Al Jazira state in Sudan, a region well known for its fertile land and agricultural importance. 
+          For generations, our family has been connected to farming and community life, relying on the land and the Nile for sustenance. 
+          Life in our home district has always been centered on agriculture, traditions, and close family ties, which shaped the way 
+          people lived and supported one another. These values of hard work and togetherness remain an important part of our family identity.
+        </p>
+        <p>
+           Among the grandparents I can recall, my paternal grandfather was devoted to farming and ensuring that the family had stability through
+           agriculture, while my paternal grandmother was admired for her kindness and ability to guide the younger members of the family. 
+           On my mother’s side, my grandfather was respected for his advice and leadership in the community, and my grandmother was remembered for
+           strengthening family bonds. Their contributions and values continue to influence us, leaving a legacy of unity, respect, and perseverance.
+        </p>
+        
+        <h2>This is us... This is Sudan</h2>
+        <video controls autoplay>
+            <source src="sudanvid.mp4" type="video/mp4"> 
+        </video>
+            
+        <h2>
+            Our Home District on the map
+        </h2>
+        <img class="loc" src="maplocation.png">
+    </body>
+</html>
