@@ -3,6 +3,8 @@ import '../theme.dart';
 import '../shared/widgets.dart';
 import 'symptom_submission_sheet.dart';
 import 'queue_submission_screen.dart';
+import 'notifications_screen.dart';
+import 'patient_profile_screen.dart';
 
 // =============================================================================
 // MODELS
@@ -135,9 +137,15 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(
                 child: _HeroHeader(
                   data: _data,
-                  onBellTap: () {
-                    // TODO: navigate to notifications screen
-                  },
+                  onBellTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  ),
+                  onLogout: () =>
+                      Navigator.of(context).pushReplacementNamed('/login'),
+                  showLogout: MediaQuery.of(context).size.width < 600,
+                  showBell: MediaQuery.of(context).size.width < 600,
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
@@ -261,13 +269,22 @@ class _HomeScreenState extends State<HomeScreen> {
 class _HeroHeader extends StatelessWidget {
   final HomeData data;
   final VoidCallback onBellTap;
+  final VoidCallback onLogout;
+  final bool showLogout;
+  final bool showBell;
 
-  const _HeroHeader({required this.data, required this.onBellTap});
+  const _HeroHeader({
+    required this.data,
+    required this.onBellTap,
+    required this.onLogout,
+    this.showLogout = true,
+    this.showBell = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 30),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.hero, AppColors.hero2, AppColors.hero3],
@@ -282,38 +299,101 @@ class _HeroHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Top row: greeting + logout ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // ── Avatar + greeting + name ──
+              Row(
                 children: [
-                  Text(
-                    'Good afternoon',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 12,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PatientProfileScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
-                  Text(
-                    data.userName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Good afternoon',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        data.userName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              _NotificationBell(
-                hasUpdate: data.hasNewNotifications,
-                onTap: onBellTap,
-              ),
+              if (showLogout)
+                GestureDetector(
+                  onTap: onLogout,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                    child: const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
-          _DoctorAvailabilityChip(isAvailable: data.isDoctorAvailable),
+
+          // ── Doctor availability + bell on same row ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _DoctorAvailabilityChip(isAvailable: data.isDoctorAvailable),
+              if (showBell)
+                _NotificationBell(
+                  hasUpdate: data.hasNewNotifications,
+                  onTap: onBellTap,
+                ),
+            ],
+          ),
           const SizedBox(height: 24),
+
+          // ── Stat cards ──
           Row(
             children: [
               Expanded(
@@ -665,16 +745,38 @@ class _CheckInCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: const Icon(Icons.sick_outlined, color: Colors.white),
-      label: const Text("I'm feeling sick! Check-in"),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 17),
+        decoration: BoxDecoration(
+          color: AppColors.err,
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.err.withValues(alpha: 0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sick_outlined, color: Colors.white, size: 20),
+            SizedBox(width: 10),
+            Text(
+              "Feeling sick? Check-in",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -708,7 +810,7 @@ class _ActiveQueueCta extends StatelessWidget {
             Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
             SizedBox(width: 10),
             Text(
-              "You're in the queue",
+              "Check submission status",
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
