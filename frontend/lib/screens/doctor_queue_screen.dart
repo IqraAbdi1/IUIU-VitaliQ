@@ -10,7 +10,7 @@ enum _Severity { urgent, moderate, routine }
 
 enum _LabStatus { sent, resultsIn, completed }
 
-enum _QueueTab { active, completed }
+enum _QueueTab { active, awaitingLab, completed }
 
 class _QueuePatient {
   final String queueId; // Backend: queue.queue_id
@@ -290,6 +290,9 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   // Backend: GET /api/v1/queue?role=doctor&status=active
   List<_QueuePatient> _patients = List.from(_mockPatients);
 
+  // Backend: GET /api/v1/queue?role=doctor&status=awaiting_lab
+  List<_QueuePatient> _awaitingLab = [];
+
   // Backend: GET /api/v1/queue?role=doctor&status=completed
   List<_CompletedPatient> _completed = List.from(_mockCompleted);
 
@@ -311,12 +314,18 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   void _markLabSent(String queueId, List<_LabResult> results) => setState(() {
     _labSentIds.add(queueId);
     _patientLabResults[queueId] = results;
+    final patient = _patients.firstWhere((p) => p.queueId == queueId);
+    _patients.removeWhere((p) => p.queueId == queueId);
+    _awaitingLab.add(patient);
   });
 
   void _completePatient(String queueId, String prescription) {
-    final patient = _patients.firstWhere((p) => p.queueId == queueId);
+    final patient = _patients.any((p) => p.queueId == queueId)
+        ? _patients.firstWhere((p) => p.queueId == queueId)
+        : _awaitingLab.firstWhere((p) => p.queueId == queueId);
     setState(() {
       _patients.removeWhere((p) => p.queueId == queueId);
+      _awaitingLab.removeWhere((p) => p.queueId == queueId);
       _completed.insert(
         0,
         _CompletedPatient(
@@ -379,20 +388,30 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
         _TabToggle(
           activeTab: _activeTab,
           activeCount: _patients.length,
+          awaitingLabCount: _awaitingLab.length,
           completedCount: _completed.length,
           onTabChanged: (t) => setState(() => _activeTab = t),
         ),
         Expanded(
-          child: _activeTab == _QueueTab.active
-              ? _ActiveList(
-                  patients: _patients,
-                  consultedIds: _consultedIds,
-                  labSentIds: _labSentIds,
-                  onConsult: _openConsultSheet,
-                  onLab: _openLabSheet,
-                  onPrescribe: _openPrescribeSheet,
-                )
-              : _CompletedList(completed: _completed),
+          child: switch (_activeTab) {
+            _QueueTab.active => _ActiveList(
+              patients: _patients,
+              consultedIds: _consultedIds,
+              labSentIds: _labSentIds,
+              onConsult: _openConsultSheet,
+              onLab: _openLabSheet,
+              onPrescribe: _openPrescribeSheet,
+            ),
+            _QueueTab.awaitingLab => _AwaitingLabList(
+              patients: _awaitingLab,
+              consultedIds: _consultedIds,
+              labSentIds: _labSentIds,
+              onConsult: _openConsultSheet,
+              onLab: _openLabSheet,
+              onPrescribe: _openPrescribeSheet,
+            ),
+            _QueueTab.completed => _CompletedList(completed: _completed),
+          },
         ),
       ],
     );
@@ -472,12 +491,14 @@ class _StatsStrip extends StatelessWidget {
 class _TabToggle extends StatelessWidget {
   final _QueueTab activeTab;
   final int activeCount;
+  final int awaitingLabCount;
   final int completedCount;
   final ValueChanged<_QueueTab> onTabChanged;
 
   const _TabToggle({
     required this.activeTab,
     required this.activeCount,
+    required this.awaitingLabCount,
     required this.completedCount,
     required this.onTabChanged,
   });
@@ -497,9 +518,14 @@ class _TabToggle extends StatelessWidget {
       child: Row(
         children: [
           _TabPill(
-            label: 'Active ($activeCount)',
+            label: 'In Queue ($activeCount)',
             active: activeTab == _QueueTab.active,
             onTap: () => onTabChanged(_QueueTab.active),
+          ),
+          _TabPill(
+            label: 'Awaiting Lab ($awaitingLabCount)',
+            active: activeTab == _QueueTab.awaitingLab,
+            onTap: () => onTabChanged(_QueueTab.awaitingLab),
           ),
           _TabPill(
             label: 'Completed ($completedCount)',
@@ -612,6 +638,46 @@ class _CompletedList extends StatelessWidget {
       itemCount: completed.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, i) => _CompletedCard(entry: completed[i]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// PATIENT CARD (Awaiting List)
+// ─────────────────────────────────────────────
+
+class _AwaitingLabList extends StatelessWidget {
+  final List<_QueuePatient> patients;
+  final Set<String> consultedIds;
+  final Set<String> labSentIds;
+  final void Function(_QueuePatient) onConsult;
+  final void Function(_QueuePatient) onLab;
+  final void Function(_QueuePatient) onPrescribe;
+
+  const _AwaitingLabList({
+    required this.patients,
+    required this.consultedIds,
+    required this.labSentIds,
+    required this.onConsult,
+    required this.onLab,
+    required this.onPrescribe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (patients.isEmpty) return const _EmptyState(tab: _QueueTab.awaitingLab);
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      itemCount: patients.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) => _PatientCard(
+        patient: patients[i],
+        consultDone: consultedIds.contains(patients[i].queueId),
+        labSent: labSentIds.contains(patients[i].queueId),
+        onConsult: () => onConsult(patients[i]),
+        onLab: () => onLab(patients[i]),
+        onPrescribe: () => onPrescribe(patients[i]),
+      ),
     );
   }
 }
@@ -1169,21 +1235,32 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = tab == _QueueTab.active;
+    final (icon, title, subtitle) = switch (tab) {
+      _QueueTab.active => (
+        Icons.check_circle_outline_rounded,
+        'Queue is clear',
+        'All patients have been seen.',
+      ),
+      _QueueTab.awaitingLab => (
+        Icons.biotech_rounded,
+        'No pending lab results',
+        'Patients awaiting lab results will appear here.',
+      ),
+      _QueueTab.completed => (
+        Icons.history_rounded,
+        'No completed consultations',
+        'Completed patients will appear here.',
+      ),
+    };
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isActive
-                ? Icons.check_circle_outline_rounded
-                : Icons.history_rounded,
-            size: 44,
-            color: AppColors.ink3.withValues(alpha: 0.4),
-          ),
+          Icon(icon, size: 44, color: AppColors.ink3.withValues(alpha: 0.4)),
           const SizedBox(height: 12),
           Text(
-            isActive ? 'Queue is clear' : 'No completed consultations',
+            title,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -1192,9 +1269,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            isActive
-                ? 'All patients have been seen.'
-                : 'Completed patients will appear here.',
+            subtitle,
             style: const TextStyle(fontSize: 12, color: AppColors.ink3),
           ),
         ],
