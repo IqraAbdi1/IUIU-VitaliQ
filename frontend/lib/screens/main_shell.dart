@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/lab_results_screen.dart';
 import '../theme.dart';
@@ -6,7 +7,6 @@ import 'my_health_screen.dart';
 import 'prescriptions_screen.dart';
 import 'doctor_queue_screen.dart';
 import 'lab_tech_screen.dart';
-//import 'pharmacy_screen.dart';
 import 'admin_screen.dart';
 import 'notifications_screen.dart';
 import 'nurse_screen.dart';
@@ -17,6 +17,28 @@ import 'staff_home_screen.dart';
 // ---------------------------------------------------------------------------
 
 const _kDesktopBreakpoint = 600.0;
+
+/// Max width of the scrollable content area on desktop.
+/// Cards stop stretching beyond this — right side gets the image panel.
+const _kContentMaxWidth = 960.0;
+
+/// Width of the right-side image panel (desktop only).
+const _kImagePanelWidth = 260.0;
+
+// ---------------------------------------------------------------------------
+// Campus image assets — add your files to assets/images/ and list them here.
+// The slider will cycle through them automatically.
+// ---------------------------------------------------------------------------
+const _campusImages = [
+  'assets/images/campus_1.jpg',
+  'assets/images/campus_2.jpg',
+  'assets/images/campus_3.jpg',
+  'assets/images/campus_4.jpg',
+  'assets/images/campus_5.jpg',
+  'assets/images/campus_6.jpg',
+  'assets/images/campus_7.jpg',
+  // add more as needed
+];
 
 // ---------------------------------------------------------------------------
 // Tab configuration
@@ -117,7 +139,6 @@ const _adminTabs = [
 // ---------------------------------------------------------------------------
 
 class MainShell extends StatefulWidget {
-  // Backend: decoded from JWT claim 'role'
   final String role;
   const MainShell({super.key, this.role = 'patient'});
 
@@ -157,11 +178,13 @@ class _MainShellState extends State<MainShell> {
     Navigator.of(context).pushReplacementNamed('/login');
   }
 
+  /// Shows the menu as a centered floating dialog on both mobile and desktop.
+  /// This looks correct on all window sizes — no more mid-screen bottom sheet.
   void _openMenu() {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AppMenu(
+      barrierColor: Colors.black54,
+      builder: (_) => _AppMenuDialog(
         role: widget.role,
         onSwitchToPatient: () {
           Navigator.pop(context);
@@ -202,7 +225,7 @@ class _MainShellState extends State<MainShell> {
 }
 
 // ---------------------------------------------------------------------------
-// Mobile layout — bottom nav (unchanged behaviour)
+// Mobile layout
 // ---------------------------------------------------------------------------
 
 class _MobileLayout extends StatelessWidget {
@@ -245,7 +268,7 @@ class _MobileLayout extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Desktop layout — left side rail + topbar + content
+// Desktop layout
 // ---------------------------------------------------------------------------
 
 class _DesktopLayout extends StatelessWidget {
@@ -284,20 +307,145 @@ class _DesktopLayout extends StatelessWidget {
               onMenuTap: onMenuTap,
             ),
 
-            // ── Vertical divider ───────────────────────────
             const VerticalDivider(
               width: 1,
               thickness: 1,
               color: AppColors.border,
             ),
 
-            // ── Main content ───────────────────────────────
+            // ── Main content — capped at _kContentMaxWidth ─
             Expanded(
               child: Column(
                 children: [
                   _TopBar(title: tab.label),
-                  Expanded(child: tab.screen),
+                  Expanded(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: _kContentMaxWidth,
+                        ),
+                        child: tab.screen,
+                      ),
+                    ),
+                  ),
                 ],
+              ),
+            ),
+
+            // ── Right image panel ──────────────────────────
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: AppColors.border,
+            ),
+            const _CampusImagePanel(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Right-side campus image panel
+// Clips from the top as the window shrinks vertically.
+// The bottom of the image is always anchored.
+// ---------------------------------------------------------------------------
+
+class _CampusImagePanel extends StatefulWidget {
+  const _CampusImagePanel();
+
+  @override
+  State<_CampusImagePanel> createState() => _CampusImagePanelState();
+}
+
+class _CampusImagePanelState extends State<_CampusImagePanel> {
+  int _current = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-advance every 5 seconds
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      setState(() {
+        _current = (_current + 1) % _campusImages.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _kImagePanelWidth,
+      // ClipRect ensures the image is clipped by the container bounds.
+      // Align.bottomCenter keeps the bottom anchored — top clips away
+      // naturally as the window height is reduced.
+      child: ClipRect(
+        child: Stack(
+          children: [
+            // Crossfade between images
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 800),
+              child: Align(
+                key: ValueKey(_current),
+                alignment: Alignment.bottomCenter,
+                child: Image.asset(
+                  _campusImages[_current],
+                  width: _kImagePanelWidth,
+                  // Use a very tall height so the image always fills
+                  // the panel regardless of window height.
+                  height: 2000,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+
+            // Subtle gradient overlay at the top — softens the clip edge
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 80,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [AppColors.bg, AppColors.bg.withValues(alpha: 0)],
+                  ),
+                ),
+              ),
+            ),
+
+            // Dot indicators at bottom
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_campusImages.length, (i) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == _current ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: i == _current
+                          ? AppColors.accent
+                          : AppColors.border,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
               ),
             ),
           ],
@@ -308,7 +456,7 @@ class _DesktopLayout extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Side rail — desktop nav
+// Side rail
 // ---------------------------------------------------------------------------
 
 class _SideRail extends StatelessWidget {
@@ -646,73 +794,109 @@ class _BottomNav extends StatelessWidget {
   }
 }
 
-class _AppMenu extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// App Menu — centered floating dialog (works on mobile + desktop)
+// Replaces the old bottom sheet that looked broken on desktop.
+// ---------------------------------------------------------------------------
+
+class _AppMenuDialog extends StatelessWidget {
   final String role;
   final VoidCallback onSwitchToPatient;
 
-  const _AppMenu({required this.role, required this.onSwitchToPatient});
+  const _AppMenuDialog({required this.role, required this.onSwitchToPatient});
 
   bool get _isStaff =>
       role == 'doctor' || role == 'nurse' || role == 'lab' || role == 'admin';
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      // Remove default dialog padding/insets
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Menu',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.bg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: AppColors.ink2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                ),
+                const Divider(color: AppColors.border, height: 1),
+                _MenuItem(
+                  icon: Icons.person_outline_rounded,
+                  label: 'My Profile',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to ProfileScreen
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.info_outline_rounded,
+                  label: 'About VitalIQ',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to AboutScreen
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.help_outline_rounded,
+                  label: 'Help & Support',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to HelpScreen
+                  },
+                ),
+                if (_isStaff) ...[
+                  const Divider(color: AppColors.border, height: 1),
+                  _MenuItem(
+                    icon: Icons.switch_account_rounded,
+                    label: 'Switch to Patient View',
+                    valueColor: AppColors.accent,
+                    onTap: onSwitchToPatient,
+                  ),
+                ],
+                const SizedBox(height: 12),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          _MenuItem(
-            icon: Icons.person_outline_rounded,
-            label: 'My Profile',
-            onTap: () {
-              Navigator.pop(context);
-              // TODO: navigate to ProfileScreen
-            },
-          ),
-          _MenuItem(
-            icon: Icons.info_outline_rounded,
-            label: 'About VitalIQ',
-            onTap: () {
-              Navigator.pop(context);
-              // TODO: navigate to AboutScreen
-            },
-          ),
-          _MenuItem(
-            icon: Icons.help_outline_rounded,
-            label: 'Help & Support',
-            onTap: () {
-              Navigator.pop(context);
-              // TODO: navigate to HelpScreen
-            },
-          ),
-          if (_isStaff) ...[
-            const Divider(color: AppColors.border, height: 1),
-            _MenuItem(
-              icon: Icons.switch_account_rounded,
-              label: 'Switch to Patient View',
-              valueColor: AppColors.accent,
-              onTap: onSwitchToPatient,
-            ),
-          ],
-          const SizedBox(height: 8),
-        ],
+        ),
       ),
     );
   }

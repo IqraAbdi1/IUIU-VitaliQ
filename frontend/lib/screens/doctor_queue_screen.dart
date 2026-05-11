@@ -333,10 +333,9 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
       _patientLabResults[queueId] ?? _mockLabResults[queueId] ?? [];
 
   void _openConsultSheet(_QueuePatient patient) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (_) => _ConsultationSheet(
         patient: patient,
         onConsultComplete: (notes) => _markConsulted(patient.queueId, notes),
@@ -345,10 +344,9 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   }
 
   void _openLabSheet(_QueuePatient patient) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (_) => _LabSheet(
         patient: patient,
         labAlreadySent: _labSentIds.contains(patient.queueId),
@@ -360,10 +358,9 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   }
 
   void _openPrescribeSheet(_QueuePatient patient) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (_) => _PrescribeSheet(
         patient: patient,
         labResults: _labResultsFor(patient.queueId),
@@ -1309,217 +1306,227 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.92,
-      minChildSize: 0.6,
-      maxChildSize: 0.95,
-      builder: (_, sc) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        ),
-        child: Column(
-          children: [
-            const _SheetHandle(),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: sc,
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SheetHeader(
-                      title: 'Consultation',
-                      patient: widget.patient,
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: AppColors.border, height: 1),
-                    const SizedBox(height: 16),
-
-                    if (!_calledIn) ...[
-                      AppInfoBox(
-                        label: 'Ready to begin',
-                        body:
-                            'Call the patient in before starting the consultation.',
-                        variant: AppInfoVariant.accent,
-                      ),
-                      const SizedBox(height: 20),
-                      _PrimaryButton(
-                        label: 'Call In Patient',
-                        icon: Icons.person_add_rounded,
-                        onTap: () => setState(() => _calledIn = true),
-                      ),
-                    ],
-
-                    if (_calledIn) ...[
-                      const _SheetLabel('Reported Symptoms'),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(11),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface2,
-                          border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Text(
-                          widget.patient.symptoms,
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.ink2,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-                      const _SheetLabel('Confirm Symptoms'),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Select all symptoms present after examination.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
-                      ),
-                      const SizedBox(height: 9),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: _kSymptoms.map((s) {
-                          final on = _confirmedSymptoms.contains(s);
-                          return GestureDetector(
-                            onTap: () => _toggleSymptom(s),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: on
-                                    ? AppColors.accentLight
-                                    : AppColors.surface2,
-                                border: Border.all(
-                                  color: on
-                                      ? AppColors.accent
-                                      : AppColors.border,
-                                  width: 1.5,
-                                ),
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: Text(
-                                s,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: on ? AppColors.accent : AppColors.ink2,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 16),
-                      const _SheetLabel('Diagnostic Notes'),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _notesController,
-                        maxLines: 4,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.ink,
-                        ),
-                        decoration: _inputDecoration(
-                          'Clinical findings, working diagnosis, reasoning…',
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-                      const _SheetLabel('Vitals'),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Optional — record if measured during consultation.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
-                      ),
-                      const SizedBox(height: 9),
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'BP Systolic',
-                                hint: '120',
-                                unit: 'mmHg',
-                                controller: _bpSysController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'BP Diastolic',
-                                hint: '80',
-                                unit: 'mmHg',
-                                controller: _bpDiaController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'Temperature',
-                                hint: '36.5',
-                                unit: '°C',
-                                controller: _tempController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'Weight',
-                                hint: '70',
-                                unit: 'kg',
-                                controller: _weightController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'Height',
-                                hint: '170',
-                                unit: 'cm',
-                                controller: _heightController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      _PrimaryButton(
-                        label: _isSubmitting
-                            ? 'Saving…'
-                            : 'Complete Consultation',
-                        icon: Icons.check_rounded,
-                        loading: _isSubmitting,
-                        onTap: _isSubmitting ? () {} : _complete,
-                      ),
-                      const SizedBox(height: 10),
-                      const _CancelButton(),
-                    ],
-                  ],
-                ),
-              ),
+    final maxH = MediaQuery.of(context).size.height * 0.88;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 560, maxHeight: maxH),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.all(Radius.circular(22)),
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _SheetHandle(),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SheetHeader(
+                          title: 'Consultation',
+                          patient: widget.patient,
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(color: AppColors.border, height: 1),
+                        const SizedBox(height: 16),
+
+                        if (!_calledIn) ...[
+                          AppInfoBox(
+                            label: 'Ready to begin',
+                            body:
+                                'Call the patient in before starting the consultation.',
+                            variant: AppInfoVariant.accent,
+                          ),
+                          const SizedBox(height: 20),
+                          _PrimaryButton(
+                            label: 'Call In Patient',
+                            icon: Icons.person_add_rounded,
+                            onTap: () => setState(() => _calledIn = true),
+                          ),
+                        ],
+
+                        if (_calledIn) ...[
+                          const _SheetLabel('Reported Symptoms'),
+                          const SizedBox(height: 6),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(11),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface2,
+                              border: Border.all(color: AppColors.border),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: Text(
+                              widget.patient.symptoms,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.ink2,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const _SheetLabel('Confirm Symptoms'),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Select all symptoms present after examination.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.ink3,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: _kSymptoms.map((s) {
+                              final on = _confirmedSymptoms.contains(s);
+                              return GestureDetector(
+                                onTap: () => _toggleSymptom(s),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: on
+                                        ? AppColors.accentLight
+                                        : AppColors.surface2,
+                                    border: Border.all(
+                                      color: on
+                                          ? AppColors.accent
+                                          : AppColors.border,
+                                      width: 1.5,
+                                    ),
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  child: Text(
+                                    s,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: on
+                                          ? AppColors.accent
+                                          : AppColors.ink2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 16),
+                          const _SheetLabel('Diagnostic Notes'),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _notesController,
+                            maxLines: 4,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.ink,
+                            ),
+                            decoration: _inputDecoration(
+                              'Clinical findings, working diagnosis, reasoning…',
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const _SheetLabel('Vitals'),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Optional — record if measured during consultation.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.ink3,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: _VitalsField(
+                                    label: 'BP Systolic',
+                                    hint: '120',
+                                    unit: 'mmHg',
+                                    controller: _bpSysController,
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _VitalsField(
+                                    label: 'BP Diastolic',
+                                    hint: '80',
+                                    unit: 'mmHg',
+                                    controller: _bpDiaController,
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: _VitalsField(
+                                    label: 'Temperature',
+                                    hint: '36.5',
+                                    unit: '°C',
+                                    controller: _tempController,
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _VitalsField(
+                                    label: 'Weight',
+                                    hint: '70',
+                                    unit: 'kg',
+                                    controller: _weightController,
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _VitalsField(
+                                    label: 'Height',
+                                    hint: '170',
+                                    unit: 'cm',
+                                    controller: _heightController,
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+                          _PrimaryButton(
+                            label: _isSubmitting
+                                ? 'Saving…'
+                                : 'Complete Consultation',
+                            icon: Icons.check_rounded,
+                            loading: _isSubmitting,
+                            onTap: _isSubmitting ? () {} : _complete,
+                          ),
+                          const SizedBox(height: 10),
+                          const _CancelButton(),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1607,132 +1614,143 @@ class _LabSheetState extends State<_LabSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: widget.labAlreadySent ? 0.75 : 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.92,
-      builder: (_, sc) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        ),
-        child: Column(
-          children: [
-            const _SheetHandle(),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: sc,
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SheetHeader(title: 'Lab', patient: widget.patient),
-                    const SizedBox(height: 16),
-                    const Divider(color: AppColors.border, height: 1),
-                    const SizedBox(height: 16),
-
-                    // ── Mode A: select and send ──
-                    if (!widget.labAlreadySent) ...[
-                      const _SheetLabel('Select Tests'),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Choose tests to request from the lab.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        children: _kTests.map((t) {
-                          final on = _selected.contains(t);
-                          return GestureDetector(
-                            onTap: () => setState(
-                              () => on ? _selected.remove(t) : _selected.add(t),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: on
-                                    ? AppColors.accentLight
-                                    : AppColors.surface2,
-                                border: Border.all(
-                                  color: on
-                                      ? AppColors.accent
-                                      : AppColors.border,
-                                  width: 1.5,
-                                ),
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: Text(
-                                t,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: on ? AppColors.accent : AppColors.ink2,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 22),
-                      _PrimaryButton(
-                        label: _isSending ? 'Sending…' : 'Send Lab Request',
-                        icon: Icons.send_rounded,
-                        loading: _isSending,
-                        onTap: _isSending ? () {} : _sendRequest,
-                      ),
-                      const SizedBox(height: 10),
-                      const _CancelButton(),
-                    ],
-
-                    // ── Mode B: view results ──
-                    if (widget.labAlreadySent) ...[
-                      const _SheetLabel('Test Results'),
-                      const SizedBox(height: 10),
-                      ...widget.existingResults.map(
-                        (r) => _LabResultRow(result: r),
-                      ),
-
-                      if (_allCompleted) ...[
-                        const SizedBox(height: 8),
-                        AppInfoBox(
-                          label: 'All results in',
-                          body:
-                              'All lab tests are complete. You can now prescribe.',
-                          variant: AppInfoVariant.accent,
-                        ),
-                        const SizedBox(height: 16),
-                        _PrimaryButton(
-                          label: 'Proceed to Prescribe',
-                          icon: Icons.medication_rounded,
-                          onTap: () {
-                            Navigator.pop(context);
-                            widget.onProceedToPrescribe();
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        const _CancelButton(),
-                      ] else ...[
-                        const SizedBox(height: 10),
-                        AppInfoBox(
-                          label: 'Results pending',
-                          body:
-                              'Some tests are still being processed by the lab.',
-                          variant: AppInfoVariant.warn,
-                        ),
-                        const SizedBox(height: 16),
-                        const _CancelButton(),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
+    final maxH = MediaQuery.of(context).size.height * 0.88;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 560, maxHeight: maxH),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.all(Radius.circular(22)),
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _SheetHandle(),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SheetHeader(title: 'Lab', patient: widget.patient),
+                        const SizedBox(height: 16),
+                        const Divider(color: AppColors.border, height: 1),
+                        const SizedBox(height: 16),
+
+                        // ── Mode A: select and send ──
+                        if (!widget.labAlreadySent) ...[
+                          const _SheetLabel('Select Tests'),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Choose tests to request from the lab.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.ink3,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 7,
+                            runSpacing: 7,
+                            children: _kTests.map((t) {
+                              final on = _selected.contains(t);
+                              return GestureDetector(
+                                onTap: () => setState(
+                                  () => on
+                                      ? _selected.remove(t)
+                                      : _selected.add(t),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: on
+                                        ? AppColors.accentLight
+                                        : AppColors.surface2,
+                                    border: Border.all(
+                                      color: on
+                                          ? AppColors.accent
+                                          : AppColors.border,
+                                      width: 1.5,
+                                    ),
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  child: Text(
+                                    t,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: on
+                                          ? AppColors.accent
+                                          : AppColors.ink2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 22),
+                          _PrimaryButton(
+                            label: _isSending ? 'Sending…' : 'Send Lab Request',
+                            icon: Icons.send_rounded,
+                            loading: _isSending,
+                            onTap: _isSending ? () {} : _sendRequest,
+                          ),
+                          const SizedBox(height: 10),
+                          const _CancelButton(),
+                        ],
+
+                        // ── Mode B: view results ──
+                        if (widget.labAlreadySent) ...[
+                          const _SheetLabel('Test Results'),
+                          const SizedBox(height: 10),
+                          ...widget.existingResults.map(
+                            (r) => _LabResultRow(result: r),
+                          ),
+                          if (_allCompleted) ...[
+                            const SizedBox(height: 8),
+                            AppInfoBox(
+                              label: 'All results in',
+                              body:
+                                  'All lab tests are complete. You can now prescribe.',
+                              variant: AppInfoVariant.accent,
+                            ),
+                            const SizedBox(height: 16),
+                            _PrimaryButton(
+                              label: 'Proceed to Prescribe',
+                              icon: Icons.medication_rounded,
+                              onTap: () {
+                                Navigator.pop(context);
+                                widget.onProceedToPrescribe();
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            const _CancelButton(),
+                          ] else ...[
+                            const SizedBox(height: 10),
+                            AppInfoBox(
+                              label: 'Results pending',
+                              body:
+                                  'Some tests are still being processed by the lab.',
+                              variant: AppInfoVariant.warn,
+                            ),
+                            const SizedBox(height: 16),
+                            const _CancelButton(),
+                          ],
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1877,182 +1895,192 @@ class _PrescribeSheetState extends State<_PrescribeSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final maxH = MediaQuery.of(context).size.height * 0.88;
     final relevantResults = widget.labResults
         .where((r) => r.status != _LabStatus.sent)
         .toList();
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.88,
-      minChildSize: 0.6,
-      maxChildSize: 0.95,
-      builder: (_, sc) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        ),
-        child: Column(
-          children: [
-            const _SheetHandle(),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: sc,
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SheetHeader(title: 'Prescribe', patient: widget.patient),
-                    const SizedBox(height: 16),
-                    const Divider(color: AppColors.border, height: 1),
-                    const SizedBox(height: 16),
-
-                    // ── Lab preview ──
-                    const _SheetLabel('Lab Results'),
-                    const SizedBox(height: 8),
-                    if (relevantResults.isEmpty)
-                      AppInfoBox(
-                        label: 'No lab results',
-                        body:
-                            'No labs were requested or results are still pending.',
-                        variant: AppInfoVariant.warn,
-                      )
-                    else
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface2,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 560, maxHeight: maxH),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.all(Radius.circular(22)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _SheetHandle(),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SheetHeader(
+                          title: 'Prescribe',
+                          patient: widget.patient,
                         ),
-                        child: Column(
-                          children: List.generate(relevantResults.length, (i) {
-                            final r = relevantResults[i];
-                            final isLast = i == relevantResults.length - 1;
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 9,
-                              ),
-                              decoration: BoxDecoration(
-                                border: isLast
-                                    ? null
-                                    : const Border(
-                                        bottom: BorderSide(
-                                          color: AppColors.border,
+                        const SizedBox(height: 16),
+                        const Divider(color: AppColors.border, height: 1),
+                        const SizedBox(height: 16),
+
+                        // ── Lab preview ──
+                        const _SheetLabel('Lab Results'),
+                        const SizedBox(height: 8),
+                        if (relevantResults.isEmpty)
+                          AppInfoBox(
+                            label: 'No lab results',
+                            body:
+                                'No labs were requested or results are still pending.',
+                            variant: AppInfoVariant.warn,
+                          )
+                        else
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface2,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              children: List.generate(relevantResults.length, (
+                                i,
+                              ) {
+                                final r = relevantResults[i];
+                                final isLast = i == relevantResults.length - 1;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 9,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: isLast
+                                        ? null
+                                        : const Border(
+                                            bottom: BorderSide(
+                                              color: AppColors.border,
+                                            ),
+                                          ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      if (r.flagged)
+                                        const Padding(
+                                          padding: EdgeInsets.only(right: 6),
+                                          child: Icon(
+                                            Icons.flag_rounded,
+                                            size: 12,
+                                            color: AppColors.err,
+                                          ),
+                                        ),
+                                      Expanded(
+                                        child: Text(
+                                          r.testName,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.ink2,
+                                          ),
                                         ),
                                       ),
-                              ),
-                              child: Row(
-                                children: [
-                                  if (r.flagged)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 6),
-                                      child: Icon(
-                                        Icons.flag_rounded,
-                                        size: 12,
-                                        color: AppColors.err,
+                                      Text(
+                                        r.value,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: r.flagged
+                                              ? AppColors.err
+                                              : AppColors.ok,
+                                        ),
                                       ),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      r.testName,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.ink2,
-                                      ),
-                                    ),
+                                    ],
                                   ),
-                                  Text(
-                                    r.value,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: r.flagged
-                                          ? AppColors.err
-                                          : AppColors.ok,
-                                    ),
-                                  ),
-                                ],
+                                );
+                              }),
+                            ),
+                          ),
+
+                        const SizedBox(height: 20),
+
+                        // ── Prescription fields ──
+                        const _SheetLabel('Prescription'),
+                        const SizedBox(height: 10),
+                        _SheetInput(
+                          controller: _medicineController,
+                          label: 'Medicine Name',
+                          hint: 'e.g. Artemether-Lumefantrine 80/480mg',
+                        ),
+                        const SizedBox(height: 10),
+                        _SheetInput(
+                          controller: _dosageController,
+                          label: 'Dosage & Schedule',
+                          hint: 'e.g. 4 tablets at 0h, 8h, 24h, 36h, 48h, 60h',
+                        ),
+                        const SizedBox(height: 10),
+                        _SheetInput(
+                          controller: _instructionsController,
+                          label: "Doctor's Instructions",
+                          hint: 'e.g. Take with food. Complete full course.',
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 22),
+                        _PrimaryButton(
+                          label: _isSubmitting
+                              ? 'Saving…'
+                              : 'Save Prescription',
+                          icon: Icons.save_rounded,
+                          loading: _isSubmitting,
+                          onTap: _isSubmitting ? () {} : _submit,
+                        ),
+                        const SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: () {
+                            widget.onComplete(
+                              widget.consultNotes.isEmpty
+                                  ? ''
+                                  : widget.consultNotes,
+                            );
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${widget.patient.name} completed — no prescription.',
+                                ),
+                                backgroundColor: AppColors.ok,
                               ),
                             );
-                          }),
-                        ),
-                      ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Prescription fields ──
-                    const _SheetLabel('Prescription'),
-                    const SizedBox(height: 10),
-                    _SheetInput(
-                      controller: _medicineController,
-                      label: 'Medicine Name',
-                      hint: 'e.g. Artemether-Lumefantrine 80/480mg',
-                    ),
-                    const SizedBox(height: 10),
-                    _SheetInput(
-                      controller: _dosageController,
-                      label: 'Dosage & Schedule',
-                      hint: 'e.g. 4 tablets at 0h, 8h, 24h, 36h, 48h, 60h',
-                    ),
-                    const SizedBox(height: 10),
-                    _SheetInput(
-                      controller: _instructionsController,
-                      label: "Doctor's Instructions",
-                      hint: 'e.g. Take with food. Complete full course.',
-                      maxLines: 3,
-                    ),
-
-                    const SizedBox(height: 22),
-                    _PrimaryButton(
-                      label: _isSubmitting ? 'Saving…' : 'Save Prescription',
-                      icon: Icons.save_rounded,
-                      loading: _isSubmitting,
-                      onTap: _isSubmitting ? () {} : _submit,
-                    ),
-                    const SizedBox(height: 10),
-                    GestureDetector(
-                      onTap: () {
-                        // Backend: POST /api/v1/consultations — prescription: null
-                        widget.onComplete(
-                          widget.consultNotes.isEmpty
-                              ? ''
-                              : widget.consultNotes,
-                        );
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '${widget.patient.name} completed — no prescription.',
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface2,
+                              borderRadius: BorderRadius.circular(50),
+                              border: Border.all(color: AppColors.border),
                             ),
-                            backgroundColor: AppColors.ok,
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface2,
-                          borderRadius: BorderRadius.circular(50),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: const Text(
-                          'No Prescription Needed',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink2,
+                            child: const Text(
+                              'No Prescription Needed',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.ink2,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 10),
+                        const _CancelButton(),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    const _CancelButton(),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
