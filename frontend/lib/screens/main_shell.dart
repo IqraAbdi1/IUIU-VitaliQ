@@ -23,7 +23,7 @@ const _kDesktopBreakpoint = 600.0;
 const _kContentMaxWidth = 960.0;
 
 /// Width of the right-side image panel (desktop only).
-const _kImagePanelWidth = 260.0;
+const _kImagePanelWidth = 500.0;
 
 // ---------------------------------------------------------------------------
 // Campus image assets — add your files to assets/images/ and list them here.
