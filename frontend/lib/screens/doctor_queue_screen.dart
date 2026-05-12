@@ -1,28 +1,25 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../shared/widgets.dart';
-
-// ─────────────────────────────────────────────
-// MODELS
-// ─────────────────────────────────────────────
+import '../services/api_service.dart';
 
 enum _Severity { urgent, moderate, routine }
-
 enum _LabStatus { sent, resultsIn, completed }
-
-enum _QueueTab { active, completed }
+enum _QueueTab  { active, completed }
 
 class _QueuePatient {
-  final String queueId; // Backend: queue.queue_id
-  final String name; // Backend: queue.patient.full_name
-  final String studentId; // Backend: queue.patient.username
-  final String timeIn; // Backend: queue.created_at (formatted)
-  final _Severity severity; // Backend: queue.ml_severity
-  final String symptoms; // Backend: queue.symptoms[].name joined
-  final String? aiNote; // Backend: queue.ai_assessment (nullable)
+  final String queueId;
+  final int visitId;
+  final String name;
+  final String studentId;
+  final String timeIn;
+  final _Severity severity;
+  final String symptoms;
+  final String? aiNote;
 
   const _QueuePatient({
     required this.queueId,
+    required this.visitId,
     required this.name,
     required this.studentId,
     required this.timeIn,
@@ -33,10 +30,10 @@ class _QueuePatient {
 }
 
 class _LabResult {
-  final String testName; // Backend: lab_result.test_name
-  final String value; // Backend: lab_result.value
-  final bool flagged; // Backend: lab_result.flagged
-  final _LabStatus status; // Backend: lab_result.status
+  final String testName;
+  final String value;
+  final bool flagged;
+  final _LabStatus status;
 
   const _LabResult({
     required this.testName,
@@ -48,10 +45,9 @@ class _LabResult {
 
 class _CompletedPatient {
   final _QueuePatient patient;
-  final String consultNotes; // Backend: consultation.diagnostic_notes
-  final String
-  prescriptionSummary; // Backend: prescription.medicine_name + dosage
-  final List<_LabResult> labResults; // Backend: lab_results for visit
+  final String consultNotes;
+  final String prescriptionSummary;
+  final List<_LabResult> labResults;
 
   const _CompletedPatient({
     required this.patient,
@@ -62,12 +58,12 @@ class _CompletedPatient {
 }
 
 class _DashStats {
-  final int todayTotal; // Backend: analytics.today_total
-  final int todayRemaining; // Backend: analytics.today_remaining
-  final int inQueue; // Backend: analytics.in_queue
-  final int urgentCount; // Backend: analytics.urgent_count
-  final int pendingLabs; // Backend: analytics.pending_labs
-  final String avgConsultMin; // Backend: analytics.avg_consult_minutes
+  final int todayTotal;
+  final int todayRemaining;
+  final int inQueue;
+  final int urgentCount;
+  final int pendingLabs;
+  final String avgConsultMin;
 
   const _DashStats({
     required this.todayTotal,
@@ -79,194 +75,8 @@ class _DashStats {
   });
 }
 
-// ─────────────────────────────────────────────
-// MOCK DATA
-// Backend: GET /api/v1/queue?role=doctor
-// Backend: GET /api/v1/queue/stats?role=doctor
-// ─────────────────────────────────────────────
-
-final _mockStats = _DashStats(
-  todayTotal: 18,
-  todayRemaining: 4,
-  inQueue: 11,
-  urgentCount: 2,
-  pendingLabs: 4,
-  avgConsultMin: '11m',
-);
-
-// Ordered by submission time — backend returns sorted by created_at asc
-final _mockPatients = <_QueuePatient>[
-  _QueuePatient(
-    queueId: 'Q-038',
-    name: 'Fatima Osman',
-    studentId: 'STU-2024-0901',
-    timeIn: '8:38 AM',
-    severity: _Severity.urgent,
-    symptoms: 'Chest pain, difficulty breathing',
-    aiNote:
-        'Possible cardiac or respiratory event. Immediate assessment required.',
-  ),
-  _QueuePatient(
-    queueId: 'Q-042',
-    name: 'Khalid Abdelgadir',
-    studentId: 'STU-2024-1092',
-    timeIn: '8:42 AM',
-    severity: _Severity.urgent,
-    symptoms: 'Fever 3 days, severe headache, vomiting, chills',
-    aiNote: 'Strong indicators for malaria/typhoid. Urgent labs recommended.',
-  ),
-  _QueuePatient(
-    queueId: 'Q-047',
-    name: 'Amina Nakato',
-    studentId: 'STU-2024-0842',
-    timeIn: '9:30 AM',
-    severity: _Severity.moderate,
-    symptoms: 'Fever, cough · paracetamol ineffective',
-  ),
-  _QueuePatient(
-    queueId: 'Q-051',
-    name: 'Ibrahim Hassan',
-    studentId: 'STU-2024-1134',
-    timeIn: '9:55 AM',
-    severity: _Severity.moderate,
-    symptoms: 'Persistent headache, light sensitivity',
-  ),
-  _QueuePatient(
-    queueId: 'Q-053',
-    name: 'Zainab Musa',
-    studentId: 'STU-2024-0776',
-    timeIn: '10:10 AM',
-    severity: _Severity.moderate,
-    symptoms: 'Nausea, diarrhoea, mild fever since yesterday',
-  ),
-  _QueuePatient(
-    queueId: 'Q-055',
-    name: 'Daniel Okello',
-    studentId: 'STU-2024-0623',
-    timeIn: '10:22 AM',
-    severity: _Severity.moderate,
-    symptoms: 'Sore throat, body aches, fatigue',
-  ),
-  _QueuePatient(
-    queueId: 'Q-056',
-    name: 'Grace Apio',
-    studentId: 'STU-2024-0589',
-    timeIn: '10:33 AM',
-    severity: _Severity.moderate,
-    symptoms: 'Cough, runny nose, low-grade fever',
-  ),
-  _QueuePatient(
-    queueId: 'Q-057',
-    name: 'Yusuf Kamau',
-    studentId: 'STU-2024-0412',
-    timeIn: '10:45 AM',
-    severity: _Severity.moderate,
-    symptoms: 'Stomach cramps, loose stool since morning',
-  ),
-  _QueuePatient(
-    queueId: 'Q-058',
-    name: 'Mariam Ssali',
-    studentId: 'STU-2024-1201',
-    timeIn: '11:00 AM',
-    severity: _Severity.routine,
-    symptoms: 'Mild headache, requesting paracetamol refill',
-  ),
-  _QueuePatient(
-    queueId: 'Q-059',
-    name: 'Ahmed Wario',
-    studentId: 'STU-2024-0355',
-    timeIn: '11:12 AM',
-    severity: _Severity.routine,
-    symptoms: 'Eye irritation, watery discharge',
-  ),
-  _QueuePatient(
-    queueId: 'Q-060',
-    name: 'Hana Abdi',
-    studentId: 'STU-2024-0298',
-    timeIn: '11:25 AM',
-    severity: _Severity.routine,
-    symptoms: 'Minor skin rash on forearm, no fever',
-  ),
-];
-
-// Mock lab results per patient — Backend: GET /api/v1/lab-results?visit_id={id}
-final _mockLabResults = <String, List<_LabResult>>{
-  'Q-038': [
-    _LabResult(
-      testName: 'ECG Trace',
-      value: 'Sinus tachycardia',
-      flagged: true,
-      status: _LabStatus.completed,
-    ),
-    _LabResult(
-      testName: 'Troponin',
-      value: 'Pending...',
-      flagged: false,
-      status: _LabStatus.sent,
-    ),
-  ],
-  'Q-042': [
-    _LabResult(
-      testName: 'Malaria RDT',
-      value: 'Positive (P. falciparum)',
-      flagged: true,
-      status: _LabStatus.completed,
-    ),
-    _LabResult(
-      testName: 'FBC',
-      value: 'Hb 9.2 g/dL',
-      flagged: true,
-      status: _LabStatus.completed,
-    ),
-    _LabResult(
-      testName: 'Blood Glucose',
-      value: '5.1 mmol/L',
-      flagged: false,
-      status: _LabStatus.resultsIn,
-    ),
-    _LabResult(
-      testName: 'Typhoid (Widal)',
-      value: 'Pending...',
-      flagged: false,
-      status: _LabStatus.sent,
-    ),
-  ],
-};
-
-// Mock completed patients — Backend: GET /api/v1/queue?role=doctor&status=completed
-final _mockCompleted = <_CompletedPatient>[
-  _CompletedPatient(
-    patient: _QueuePatient(
-      queueId: 'Q-031',
-      name: 'Aisha Kamau',
-      studentId: 'STU-2024-0211',
-      timeIn: '7:55 AM',
-      severity: _Severity.moderate,
-      symptoms: 'Fever, body aches',
-    ),
-    consultNotes:
-        'Likely viral infection. No bacterial signs. Rest and fluids advised.',
-    prescriptionSummary: 'Paracetamol 500mg · 3×/day for 5 days',
-    labResults: [],
-  ),
-  _CompletedPatient(
-    patient: _QueuePatient(
-      queueId: 'Q-033',
-      name: 'Omar Diallo',
-      studentId: 'STU-2024-0188',
-      timeIn: '8:10 AM',
-      severity: _Severity.routine,
-      symptoms: 'Mild headache',
-    ),
-    consultNotes: 'Tension headache. No neurological signs.',
-    prescriptionSummary: 'Ibuprofen 400mg · as needed',
-    labResults: [],
-  ),
-];
-
-// ─────────────────────────────────────────────
-// SCREEN
-// ─────────────────────────────────────────────
+final _mockLabResults = <String, List<_LabResult>>{};
+//final _mockCompleted  = <_CompletedPatient>[];
 
 class DoctorQueueScreen extends StatefulWidget {
   const DoctorQueueScreen({super.key});
@@ -276,32 +86,108 @@ class DoctorQueueScreen extends StatefulWidget {
 }
 
 class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
-  // Derived from live queue state — Backend: GET /api/v1/queue/stats?role=doctor
+  bool _isLoading = true;
+
+  int    _todayTotal     = 0;
+  int    _todayRemaining = 0;
+  int    _pendingLabs    = 0;
+  String _avgConsult     = '—';
+
   _DashStats get _stats => _DashStats(
-    todayTotal:
-        _mockStats.todayTotal, // Backend: still static until endpoint live
-    todayRemaining: _mockStats.todayRemaining,
-    inQueue: _patients.length,
-    urgentCount: _patients.where((p) => p.severity == _Severity.urgent).length,
-    pendingLabs: _labSentIds.length,
-    avgConsultMin: _mockStats.avgConsultMin,
+    todayTotal:    _todayTotal,
+    todayRemaining: _todayRemaining,
+    inQueue:       _patients.length,
+    urgentCount:   _patients.where((p) => p.severity == _Severity.urgent).length,
+    pendingLabs:   _pendingLabs,
+    avgConsultMin: _avgConsult,
   );
 
-  // Backend: GET /api/v1/queue?role=doctor&status=active
-  List<_QueuePatient> _patients = List.from(_mockPatients);
-
-  // Backend: GET /api/v1/queue?role=doctor&status=completed
-  List<_CompletedPatient> _completed = List.from(_mockCompleted);
+  List<_QueuePatient>     _patients  = [];
+  List<_CompletedPatient> _completed = [];
 
   _QueueTab _activeTab = _QueueTab.active;
 
-  // Per-card state — keyed by queueId
-  // Backend: derived from visit.status
-  final Set<String> _consultedIds = {};
-  final Set<String> _labSentIds = {};
+  final Set<String>                   _consultedIds      = {};
+  final Set<String>                   _labSentIds        = {};
   final Map<String, List<_LabResult>> _patientLabResults = {};
-  // Stores consult notes per patient for completed card summary
-  final Map<String, String> _consultNotes = {};
+  final Map<String, String>           _consultNotes      = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQueue();
+    _loadDashboardStats();
+  }
+
+  Future<void> _loadQueue() async {
+    try {
+      final data  = await ApiService().getQueue();
+      final List queue = data['queue'] ?? [];
+
+      final patients = queue.map<_QueuePatient>((item) {
+        final severityStr = (item['queue_category'] ?? 'MINOR').toString().toUpperCase();
+        final severity = severityStr == 'SEVERE'
+            ? _Severity.urgent
+            : severityStr == 'MODERATE'
+            ? _Severity.moderate
+            : _Severity.routine;
+
+        final symptomsList  = item['symptoms'] as List? ?? [];
+        final otherSymptoms = (item['doctor_note'] ?? '').toString();
+        final symptomsStr   = [
+          if (symptomsList.isNotEmpty) symptomsList.join(', '),
+          if (otherSymptoms.isNotEmpty) otherSymptoms,
+        ].join(' · ');
+
+        final createdAt = item['created_at'] ?? '';
+        String timeIn = '';
+        if (createdAt.isNotEmpty) {
+          try {
+            final dt     = DateTime.parse(createdAt).toLocal();
+            final h      = dt.hour > 12 ? dt.hour - 12 : dt.hour == 0 ? 12 : dt.hour;
+            final m      = dt.minute.toString().padLeft(2, '0');
+            final period = dt.hour >= 12 ? 'PM' : 'AM';
+            timeIn = '$h:$m $period';
+          } catch (_) { timeIn = createdAt; }
+        }
+
+        return _QueuePatient(
+          queueId:   '#${item['queue_position'] ?? '?'}',
+          visitId:   item['id'] ?? 0,
+          name:      item['patient_name'] ?? 'Unknown',
+          studentId: item['reg_no'] ?? '',
+          timeIn:    timeIn,
+          severity:  severity,
+          symptoms:  symptomsStr,
+          aiNote:    item['doctor_note']?.toString().isNotEmpty == true
+                       ? item['doctor_note'].toString()
+                       : null,
+        );
+      }).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _patients  = patients;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadDashboardStats() async {
+    try {
+      final data = await ApiService().getDoctorDashboard();
+      if (!mounted) return;
+      setState(() {
+        _todayTotal     = data['seen_today']   ?? 0;
+        _todayRemaining = data['in_queue']     ?? 0;
+        _avgConsult     = data['avg_consult']  ?? '—';
+        _pendingLabs    = data['pending_labs'] ?? 0;
+      });
+    } catch (_) {}
+  }
 
   void _markConsulted(String queueId, String notes) => setState(() {
     _consultedIds.add(queueId);
@@ -317,15 +203,12 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
     final patient = _patients.firstWhere((p) => p.queueId == queueId);
     setState(() {
       _patients.removeWhere((p) => p.queueId == queueId);
-      _completed.insert(
-        0,
-        _CompletedPatient(
-          patient: patient,
-          consultNotes: _consultNotes[queueId] ?? '',
-          prescriptionSummary: prescription,
-          labResults: _patientLabResults[queueId] ?? [],
-        ),
-      );
+      _completed.insert(0, _CompletedPatient(
+        patient:             patient,
+        consultNotes:        _consultNotes[queueId] ?? '',
+        prescriptionSummary: prescription,
+        labResults:          _patientLabResults[queueId] ?? [],
+      ));
     });
   }
 
@@ -368,14 +251,15 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
         patient: patient,
         labResults: _labResultsFor(patient.queueId),
         consultNotes: _consultNotes[patient.queueId] ?? '',
-        onComplete: (prescription) =>
-            _completePatient(patient.queueId, prescription),
+        onComplete: (prescription) => _completePatient(patient.queueId, prescription),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
     return Column(
       children: [
         _StatsStrip(stats: _stats),
@@ -402,10 +286,6 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   }
 }
 
-// ─────────────────────────────────────────────
-// STATS STRIP
-// ─────────────────────────────────────────────
-
 class _StatsStrip extends StatelessWidget {
   final _DashStats stats;
   const _StatsStrip({required this.stats});
@@ -413,29 +293,16 @@ class _StatsStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 4),
       child: Column(
         children: [
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: AppStatCard(
-                    label: 'Today',
-                    value: '${stats.todayTotal}',
-                    sub: '${stats.todayRemaining} remaining',
-                    valueColor: AppColors.accent,
-                  ),
-                ),
+                Expanded(child: AppStatCard(label: 'Today',    value: '${stats.todayTotal}', sub: '${stats.todayRemaining} remaining', valueColor: AppColors.accent)),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: AppStatCard(
-                    label: 'In Queue',
-                    value: '${stats.inQueue}',
-                    sub: '${stats.urgentCount} urgent',
-                  ),
-                ),
+                Expanded(child: AppStatCard(label: 'In Queue', value: '${stats.inQueue}',    sub: '${stats.urgentCount} urgent')),
               ],
             ),
           ),
@@ -444,21 +311,9 @@ class _StatsStrip extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: AppStatCard(
-                    label: 'Pending Labs',
-                    value: '${stats.pendingLabs}',
-                    valueColor: AppColors.warn,
-                  ),
-                ),
+                Expanded(child: AppStatCard(label: 'Pending Labs', value: '${stats.pendingLabs}', valueColor: AppColors.warn)),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: AppStatCard(
-                    label: 'Avg. Consult',
-                    value: stats.avgConsultMin,
-                    valueColor: AppColors.ok,
-                  ),
-                ),
+                Expanded(child: AppStatCard(label: 'Avg. Consult', value: stats.avgConsultMin,    valueColor: AppColors.ok)),
               ],
             ),
           ),
@@ -467,10 +322,6 @@ class _StatsStrip extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// TAB TOGGLE — Active | Completed
-// ─────────────────────────────────────────────
 
 class _TabToggle extends StatelessWidget {
   final _QueueTab activeTab;
@@ -492,23 +343,12 @@ class _TabToggle extends StatelessWidget {
       margin: const EdgeInsets.only(top: 10),
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border),
-          bottom: BorderSide(color: AppColors.border),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border), bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
-          _TabPill(
-            label: 'Active ($activeCount)',
-            active: activeTab == _QueueTab.active,
-            onTap: () => onTabChanged(_QueueTab.active),
-          ),
-          _TabPill(
-            label: 'Completed ($completedCount)',
-            active: activeTab == _QueueTab.completed,
-            onTap: () => onTabChanged(_QueueTab.completed),
-          ),
+          _TabPill(label: 'Active ($activeCount)',       active: activeTab == _QueueTab.active,    onTap: () => onTabChanged(_QueueTab.active)),
+          _TabPill(label: 'Completed ($completedCount)', active: activeTab == _QueueTab.completed, onTap: () => onTabChanged(_QueueTab.completed)),
         ],
       ),
     );
@@ -520,11 +360,7 @@ class _TabPill extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
 
-  const _TabPill({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
+  const _TabPill({required this.label, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -534,31 +370,15 @@ class _TabPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: active ? AppColors.accent : Colors.transparent,
-                width: 2,
-              ),
-            ),
+            border: Border(bottom: BorderSide(color: active ? AppColors.accent : Colors.transparent, width: 2)),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: active ? AppColors.accent : AppColors.ink3,
-            ),
-          ),
+          child: Text(label, textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: active ? AppColors.accent : AppColors.ink3)),
         ),
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// ACTIVE LIST
-// ─────────────────────────────────────────────
 
 class _ActiveList extends StatelessWidget {
   final List<_QueuePatient> patients;
@@ -599,10 +419,6 @@ class _ActiveList extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// COMPLETED LIST
-// ─────────────────────────────────────────────
-
 class _CompletedList extends StatelessWidget {
   final List<_CompletedPatient> completed;
   const _CompletedList({required this.completed});
@@ -618,10 +434,6 @@ class _CompletedList extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// PATIENT CARD (active)
-// ─────────────────────────────────────────────
 
 class _PatientCard extends StatelessWidget {
   final _QueuePatient patient;
@@ -643,27 +455,26 @@ class _PatientCard extends StatelessWidget {
   bool get _isUrgent => patient.severity == _Severity.urgent;
 
   Color get _leftBorderColor => switch (patient.severity) {
-    _Severity.urgent => const Color(0xFFFF4C4C),
+    _Severity.urgent   => const Color(0xFFFF4C4C),
     _Severity.moderate => AppColors.warn,
-    _Severity.routine => AppColors.ink3,
+    _Severity.routine  => AppColors.ink3,
   };
 
-  Color get _cardBg => _isUrgent ? const Color(0xFF151E2B) : AppColors.surface;
-  Color get _nameColor => _isUrgent ? Colors.white : AppColors.ink;
-  Color get _metaColor => _isUrgent ? const Color(0xFF8A9BB0) : AppColors.ink3;
-  Color get _symptomsColor =>
-      _isUrgent ? const Color(0xFFCFD8E3) : AppColors.ink2;
+  Color get _cardBg        => _isUrgent ? const Color(0xFF151E2B) : AppColors.surface;
+  Color get _nameColor     => _isUrgent ? Colors.white : AppColors.ink;
+  Color get _metaColor     => _isUrgent ? const Color(0xFF8A9BB0) : AppColors.ink3;
+  Color get _symptomsColor => _isUrgent ? const Color(0xFFCFD8E3) : AppColors.ink2;
 
   AppStatus get _chipStatus => switch (patient.severity) {
-    _Severity.urgent => AppStatus.err,
+    _Severity.urgent   => AppStatus.err,
     _Severity.moderate => AppStatus.warn,
-    _Severity.routine => AppStatus.neutral,
+    _Severity.routine  => AppStatus.neutral,
   };
 
   String get _chipLabel => switch (patient.severity) {
-    _Severity.urgent => 'Urgent',
+    _Severity.urgent   => 'Urgent',
     _Severity.moderate => 'Moderate',
-    _Severity.routine => 'Routine',
+    _Severity.routine  => 'Routine',
   };
 
   void _showLockedNotice(BuildContext context, String action) {
@@ -677,70 +488,27 @@ class _PatientCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 32, offset: const Offset(0, 8))],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: AppColors.warnBg,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.lock_outline_rounded,
-                  color: AppColors.warn,
-                  size: 24,
-                ),
-              ),
+              Container(width: 48, height: 48,
+                decoration: const BoxDecoration(color: AppColors.warnBg, shape: BoxShape.circle),
+                child: const Icon(Icons.lock_outline_rounded, color: AppColors.warn, size: 24)),
               const SizedBox(height: 14),
-              const Text(
-                'Consult first',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
+              const Text('Consult first', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.ink)),
               const SizedBox(height: 6),
-              Text(
-                'Complete the consultation before accessing $action.',
+              Text('Complete the consultation before accessing $action.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.ink2,
-                  height: 1.5,
-                ),
-              ),
+                style: const TextStyle(fontSize: 12.5, color: AppColors.ink2, height: 1.5)),
               const SizedBox(height: 18),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface2,
-                    borderRadius: BorderRadius.circular(50),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Text(
-                    'Got it',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink2,
-                    ),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(50), border: Border.all(color: AppColors.border)),
+                  child: const Text('Got it', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink2)),
                 ),
               ),
             ],
@@ -757,22 +525,16 @@ class _PatientCard extends StatelessWidget {
         color: _cardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border(left: BorderSide(color: _leftBorderColor, width: 3.5)),
-        boxShadow: [
-          BoxShadow(
-            color: _isUrgent
-                ? Colors.black.withValues(alpha: 0.22)
-                : Colors.black.withValues(alpha: 0.06),
-            blurRadius: _isUrgent ? 16 : 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        boxShadow: [BoxShadow(
+          color: _isUrgent ? Colors.black.withValues(alpha: 0.22) : Colors.black.withValues(alpha: 0.06),
+          blurRadius: _isUrgent ? 16 : 8, offset: const Offset(0, 3),
+        )],
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // — Top row —
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -780,23 +542,10 @@ class _PatientCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        patient.name,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: _nameColor,
-                        ),
-                      ),
+                      Text(patient.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _nameColor)),
                       const SizedBox(height: 1),
-                      Text(
-                        '${patient.studentId} · #${patient.queueId} · ${patient.timeIn}',
-                        style: TextStyle(
-                          fontFamily: 'DMMono',
-                          fontSize: 10,
-                          color: _metaColor,
-                        ),
-                      ),
+                      Text('${patient.studentId} · ${patient.queueId} · ${patient.timeIn}',
+                        style: TextStyle(fontFamily: 'DMMono', fontSize: 10, color: _metaColor)),
                     ],
                   ),
                 ),
@@ -804,87 +553,42 @@ class _PatientCard extends StatelessWidget {
                 AppStatusChip(label: _chipLabel, status: _chipStatus),
               ],
             ),
-
-            // — Symptoms —
             const SizedBox(height: 5),
-            Text(
-              patient.symptoms,
-              style: TextStyle(fontSize: 11.5, color: _symptomsColor),
-            ),
-
-            // — AI Assessment (urgent only) —
+            Text(patient.symptoms, style: TextStyle(fontSize: 11.5, color: _symptomsColor)),
             if (patient.aiNote != null) ...[
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1D3A5C),
                   borderRadius: BorderRadius.circular(7),
-                  border: Border.all(
-                    color: const Color(0xFF2D5278),
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: const Color(0xFF2D5278), width: 1.5),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 13,
-                      color: Color(0xFF7ECFF5),
-                    ),
+                    const Icon(Icons.auto_awesome_rounded, size: 13, color: Color(0xFF7ECFF5)),
                     const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        patient.aiNote!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFFCFD8E3),
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
+                    Expanded(child: Text(patient.aiNote!, style: const TextStyle(fontSize: 11, color: Color(0xFFCFD8E3), height: 1.45))),
                   ],
                 ),
               ),
             ],
-
-            // — Action buttons —
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: _CardButton(
                     label: consultDone ? 'Consulted ✓' : 'Consult',
-                    primary: !consultDone,
-                    done: consultDone,
-                    isUrgent: _isUrgent,
+                    primary: !consultDone, done: consultDone, isUrgent: _isUrgent,
                     onTap: consultDone ? () {} : onConsult,
                   ),
                 ),
                 const SizedBox(width: 6),
-                _CardButton(
-                  label: 'Lab',
-                  isUrgent: _isUrgent,
-                  labPending: labSent,
-                  locked: !consultDone,
-                  onTap: consultDone
-                      ? onLab
-                      : () => _showLockedNotice(context, 'Lab'),
-                ),
+                _CardButton(label: 'Lab',       isUrgent: _isUrgent, labPending: labSent, locked: !consultDone, onTap: consultDone ? onLab      : () => _showLockedNotice(context, 'Lab')),
                 const SizedBox(width: 6),
-                _CardButton(
-                  label: 'Prescribe',
-                  isUrgent: _isUrgent,
-                  locked: !consultDone,
-                  onTap: consultDone
-                      ? onPrescribe
-                      : () => _showLockedNotice(context, 'Prescribe'),
-                ),
+                _CardButton(label: 'Prescribe', isUrgent: _isUrgent,                      locked: !consultDone, onTap: consultDone ? onPrescribe : () => _showLockedNotice(context, 'Prescribe')),
               ],
             ),
           ],
@@ -915,22 +619,14 @@ class _CardButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bg;
-    Color borderColor;
-    Color textColor;
+    Color bg, borderColor, textColor;
 
     if (primary) {
-      bg = AppColors.accent;
-      borderColor = AppColors.accent;
-      textColor = Colors.white;
+      bg = AppColors.accent; borderColor = AppColors.accent; textColor = Colors.white;
     } else if (done) {
-      bg = AppColors.okBg;
-      borderColor = AppColors.okBorder;
-      textColor = AppColors.ok;
+      bg = AppColors.okBg; borderColor = AppColors.okBorder; textColor = AppColors.ok;
     } else if (labPending) {
-      bg = AppColors.warnBg;
-      borderColor = AppColors.warnBorder;
-      textColor = AppColors.warn;
+      bg = AppColors.warnBg; borderColor = AppColors.warnBorder; textColor = AppColors.warn;
     } else if (locked) {
       bg = isUrgent ? const Color(0xFF1D3A5C) : AppColors.surface2;
       borderColor = isUrgent ? const Color(0xFF2D5278) : AppColors.border;
@@ -945,51 +641,20 @@ class _CardButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: bg,
-          border: Border.all(color: borderColor, width: 1.5),
-          borderRadius: BorderRadius.circular(50),
-        ),
+        decoration: BoxDecoration(color: bg, border: Border.all(color: borderColor, width: 1.5), borderRadius: BorderRadius.circular(50)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (locked)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  Icons.lock_outline_rounded,
-                  size: 10,
-                  color: textColor,
-                ),
-              ),
-            if (labPending)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  Icons.hourglass_top_rounded,
-                  size: 10,
-                  color: textColor,
-                ),
-              ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-              ),
-            ),
+            if (locked)     Padding(padding: const EdgeInsets.only(right: 4), child: Icon(Icons.lock_outline_rounded,  size: 10, color: textColor)),
+            if (labPending) Padding(padding: const EdgeInsets.only(right: 4), child: Icon(Icons.hourglass_top_rounded, size: 10, color: textColor)),
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor)),
           ],
         ),
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// COMPLETED CARD (read-only, collapsible)
-// ─────────────────────────────────────────────
 
 class _CompletedCard extends StatefulWidget {
   final _CompletedPatient entry;
@@ -1010,13 +675,7 @@ class _CompletedCardState extends State<_CompletedCard> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: const Border(left: BorderSide(color: AppColors.ok, width: 3.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
@@ -1030,33 +689,15 @@ class _CompletedCardState extends State<_CompletedCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          p.name,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink,
-                          ),
-                        ),
+                        Text(p.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink)),
                         const SizedBox(height: 1),
-                        Text(
-                          '#${p.queueId} · ${p.timeIn}',
-                          style: const TextStyle(
-                            fontFamily: 'DMMono',
-                            fontSize: 10,
-                            color: AppColors.ink3,
-                          ),
-                        ),
+                        Text('${p.queueId} · ${p.timeIn}', style: const TextStyle(fontFamily: 'DMMono', fontSize: 10, color: AppColors.ink3)),
                       ],
                     ),
                   ),
                   AppStatusChip(label: 'Done', status: AppStatus.ok),
                   const SizedBox(width: 8),
-                  Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    size: 18,
-                    color: AppColors.ink3,
-                  ),
+                  Icon(_expanded ? Icons.expand_less : Icons.expand_more, size: 18, color: AppColors.ink3),
                 ],
               ),
             ),
@@ -1071,86 +712,34 @@ class _CompletedCardState extends State<_CompletedCard> {
                   const _SheetLabel("Doctor's Notes"),
                   const SizedBox(height: 6),
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface2,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(
-                      widget.entry.consultNotes.isEmpty
-                          ? '—'
-                          : widget.entry.consultNotes,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.ink2,
-                        height: 1.5,
-                      ),
-                    ),
+                    width: double.infinity, padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
+                    child: Text(widget.entry.consultNotes.isEmpty ? '—' : widget.entry.consultNotes,
+                      style: const TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.5)),
                   ),
                   const SizedBox(height: 10),
                   const _SheetLabel('Prescription'),
                   const SizedBox(height: 6),
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.accentMid),
-                    ),
-                    child: Text(
-                      widget.entry.prescriptionSummary.isEmpty
-                          ? 'No prescription'
-                          : widget.entry.prescriptionSummary,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
-                        height: 1.5,
-                      ),
-                    ),
+                    width: double.infinity, padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: AppColors.accentLight, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.accentMid)),
+                    child: Text(widget.entry.prescriptionSummary.isEmpty ? 'No prescription' : widget.entry.prescriptionSummary,
+                      style: const TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w600, height: 1.5)),
                   ),
                   if (widget.entry.labResults.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     const _SheetLabel('Lab Results'),
                     const SizedBox(height: 6),
-                    ...widget.entry.labResults.map(
-                      (r) => Padding(
-                        padding: const EdgeInsets.only(bottom: 5),
-                        child: Row(
-                          children: [
-                            if (r.flagged)
-                              const Padding(
-                                padding: EdgeInsets.only(right: 5),
-                                child: Icon(
-                                  Icons.flag_rounded,
-                                  size: 11,
-                                  color: AppColors.err,
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(
-                                r.testName,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.ink2,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              r.value,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: r.flagged ? AppColors.err : AppColors.ok,
-                              ),
-                            ),
-                          ],
-                        ),
+                    ...widget.entry.labResults.map((r) => Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Row(
+                        children: [
+                          if (r.flagged) const Padding(padding: EdgeInsets.only(right: 5), child: Icon(Icons.flag_rounded, size: 11, color: AppColors.err)),
+                          Expanded(child: Text(r.testName, style: const TextStyle(fontSize: 12, color: AppColors.ink2))),
+                          Text(r.value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: r.flagged ? AppColors.err : AppColors.ok)),
+                        ],
                       ),
-                    ),
+                    )),
                   ],
                 ],
               ),
@@ -1161,10 +750,6 @@ class _CompletedCardState extends State<_CompletedCard> {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// EMPTY STATE
-// ─────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final _QueueTab tab;
@@ -1177,48 +762,25 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isActive
-                ? Icons.check_circle_outline_rounded
-                : Icons.history_rounded,
-            size: 44,
-            color: AppColors.ink3.withValues(alpha: 0.4),
-          ),
+          Icon(isActive ? Icons.check_circle_outline_rounded : Icons.history_rounded,
+            size: 44, color: AppColors.ink3.withValues(alpha: 0.4)),
           const SizedBox(height: 12),
-          Text(
-            isActive ? 'Queue is clear' : 'No completed consultations',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink3,
-            ),
-          ),
+          Text(isActive ? 'Queue is clear' : 'No completed consultations',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.ink3)),
           const SizedBox(height: 4),
-          Text(
-            isActive
-                ? 'All patients have been seen.'
-                : 'Completed patients will appear here.',
-            style: const TextStyle(fontSize: 12, color: AppColors.ink3),
-          ),
+          Text(isActive ? 'All patients have been seen.' : 'Completed patients will appear here.',
+            style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────
-// CONSULTATION SHEET
-// One job: Call In → symptoms + notes → Complete
-// ─────────────────────────────────────────────
-
 class _ConsultationSheet extends StatefulWidget {
   final _QueuePatient patient;
-  final ValueChanged<String> onConsultComplete; // passes notes back
+  final ValueChanged<String> onConsultComplete;
 
-  const _ConsultationSheet({
-    required this.patient,
-    required this.onConsultComplete,
-  });
+  const _ConsultationSheet({required this.patient, required this.onConsultComplete});
 
   @override
   State<_ConsultationSheet> createState() => _ConsultationSheetState();
@@ -1227,46 +789,43 @@ class _ConsultationSheet extends StatefulWidget {
 class _ConsultationSheetState extends State<_ConsultationSheet> {
   bool _calledIn = false;
   late List<String> _confirmedSymptoms;
-  final _notesController = TextEditingController();
+  final _notesController     = TextEditingController();
+  final _diagnosisController = TextEditingController();
+  final _bpSysController     = TextEditingController();
+  final _bpDiaController     = TextEditingController();
+  final _tempController      = TextEditingController();
+  final _weightController    = TextEditingController();
+  final _heightController    = TextEditingController();
   bool _isSubmitting = false;
 
-  final _bpSysController = TextEditingController();
-  final _bpDiaController = TextEditingController();
-  final _tempController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _heightController = TextEditingController();
-
   static const _kSymptoms = [
-    'Fever',
-    'Cough',
-    'Headache',
-    'Nausea',
-    'Fatigue',
-    'Chills',
-    'Body aches',
-    'Diarrhoea',
-    'Chest pain',
-    'Breathlessness',
-    'Vomiting',
-    'Loss of appetite',
-    'Joint pain',
-    'Rash',
+    'Fever', 'Cough', 'Headache', 'Nausea', 'Fatigue', 'Chills',
+    'Body aches', 'Diarrhoea', 'Chest pain', 'Breathlessness',
+    'Vomiting', 'Loss of appetite', 'Joint pain', 'Rash',
   ];
 
   @override
   void initState() {
     super.initState();
-    // Backend: visit.symptoms[].name
     _confirmedSymptoms = widget.patient.symptoms
-        .split(RegExp(r'[,·]'))
+        .split(RegExp(r'[,·\n]'))
         .map((s) => s.trim())
-        .where((s) => _kSymptoms.any((k) => k.toLowerCase() == s.toLowerCase()))
+        .where((s) => s.isNotEmpty)
+        .map((s) {
+          final match = _kSymptoms.firstWhere(
+            (k) => k.toLowerCase() == s.toLowerCase(),
+            orElse: () => '',
+          );
+          return match;
+        })
+        .where((s) => s.isNotEmpty)
         .toList();
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _diagnosisController.dispose();
     _bpSysController.dispose();
     _bpDiaController.dispose();
     _tempController.dispose();
@@ -1276,35 +835,45 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
   }
 
   void _toggleSymptom(String s) => setState(() {
-    _confirmedSymptoms.contains(s)
-        ? _confirmedSymptoms.remove(s)
-        : _confirmedSymptoms.add(s);
+    _confirmedSymptoms.contains(s) ? _confirmedSymptoms.remove(s) : _confirmedSymptoms.add(s);
   });
 
-  // Backend: POST /api/v1/consultations
-  // Body: { visit_id, confirmed_symptoms, diagnostic_notes, vitals: { bp_sys, bp_dia, temp, weight, height } }
   Future<void> _complete() async {
     if (_notesController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add diagnostic notes before completing.'),
-        ),
-      );
+        const SnackBar(content: Text('Add diagnostic notes before completing.')));
       return;
     }
     setState(() => _isSubmitting = true);
-    // Backend: POST /api/v1/consultations
-    // Body: { visit_id, confirmed_symptoms, diagnostic_notes }
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    widget.onConsultComplete(_notesController.text.trim());
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    try {
+      await ApiService().submitConsultation(
+        visitId:       widget.patient.visitId,
+        doctorStaffId: ApiService.currentStaffId ?? '',
+        clinicalNotes: _notesController.text.trim(),
+        diagnosis:     _diagnosisController.text.trim().isEmpty
+                         ? 'PENDING LAB RESULTS'
+                         : _diagnosisController.text.trim(),
+        bpSystolic:    int.tryParse(_bpSysController.text),
+        bpDiastolic:   int.tryParse(_bpDiaController.text),
+        temperature:   double.tryParse(_tempController.text),
+        weight:        double.tryParse(_weightController.text),
+        height:        double.tryParse(_heightController.text),
+      );
+      if (!mounted) return;
+      widget.onConsultComplete(_notesController.text.trim());
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Consultation for ${widget.patient.name} completed.'),
         backgroundColor: AppColors.ok,
-      ),
-    );
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed: ${e.toString()}'),
+        backgroundColor: AppColors.err,
+      ));
+    }
   }
 
   @override
@@ -1314,10 +883,7 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
       minChildSize: 0.6,
       maxChildSize: 0.95,
       builder: (_, sc) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        ),
+        decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
         child: Column(
           children: [
             const _SheetHandle(),
@@ -1328,141 +894,70 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SheetHeader(
-                      title: 'Consultation',
-                      patient: widget.patient,
-                    ),
+                    _SheetHeader(title: 'Consultation', patient: widget.patient),
                     const SizedBox(height: 16),
                     const Divider(color: AppColors.border, height: 1),
                     const SizedBox(height: 16),
 
                     if (!_calledIn) ...[
-                      AppInfoBox(
-                        label: 'Ready to begin',
-                        body:
-                            'Call the patient in before starting the consultation.',
-                        variant: AppInfoVariant.accent,
-                      ),
+                      AppInfoBox(label: 'Ready to begin', body: 'Call the patient in before starting the consultation.', variant: AppInfoVariant.accent),
                       const SizedBox(height: 20),
-                      _PrimaryButton(
-                        label: 'Call In Patient',
-                        icon: Icons.person_add_rounded,
-                        onTap: () => setState(() => _calledIn = true),
-                      ),
+                      _PrimaryButton(label: 'Call In Patient', icon: Icons.person_add_rounded, onTap: () => setState(() => _calledIn = true)),
                     ],
 
                     if (_calledIn) ...[
                       const _SheetLabel('Reported Symptoms'),
                       const SizedBox(height: 6),
                       Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(11),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface2,
-                          border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Text(
-                          widget.patient.symptoms,
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.ink2,
-                            height: 1.5,
-                          ),
-                        ),
+                        width: double.infinity, padding: const EdgeInsets.all(11),
+                        decoration: BoxDecoration(color: AppColors.surface2, border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(9)),
+                        child: Text(widget.patient.symptoms, style: const TextStyle(fontSize: 12.5, color: AppColors.ink2, height: 1.5)),
                       ),
-
                       const SizedBox(height: 16),
                       const _SheetLabel('Confirm Symptoms'),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Select all symptoms present after examination.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
-                      ),
+                      const Text('Select all symptoms present after examination.', style: TextStyle(fontSize: 11.5, color: AppColors.ink3)),
                       const SizedBox(height: 9),
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                        spacing: 6, runSpacing: 6,
                         children: _kSymptoms.map((s) {
                           final on = _confirmedSymptoms.contains(s);
                           return GestureDetector(
                             onTap: () => _toggleSymptom(s),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: on
-                                    ? AppColors.accentLight
-                                    : AppColors.surface2,
-                                border: Border.all(
-                                  color: on
-                                      ? AppColors.accent
-                                      : AppColors.border,
-                                  width: 1.5,
-                                ),
+                                color: on ? AppColors.accentLight : AppColors.surface2,
+                                border: Border.all(color: on ? AppColors.accent : AppColors.border, width: 1.5),
                                 borderRadius: BorderRadius.circular(50),
                               ),
-                              child: Text(
-                                s,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: on ? AppColors.accent : AppColors.ink2,
-                                ),
-                              ),
+                              child: Text(s, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: on ? AppColors.accent : AppColors.ink2)),
                             ),
                           );
                         }).toList(),
                       ),
-
                       const SizedBox(height: 16),
                       const _SheetLabel('Diagnostic Notes'),
                       const SizedBox(height: 6),
-                      TextField(
-                        controller: _notesController,
-                        maxLines: 4,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.ink,
-                        ),
-                        decoration: _inputDecoration(
-                          'Clinical findings, working diagnosis, reasoning…',
-                        ),
-                      ),
-
+                      TextField(controller: _notesController, maxLines: 4, style: const TextStyle(fontSize: 13, color: AppColors.ink), decoration: _inputDecoration('Clinical findings, working diagnosis, reasoning…')),
+                      const SizedBox(height: 16),
+                      const _SheetLabel('Diagnosis'),
+                      const SizedBox(height: 4),
+                      const Text('Leave blank if awaiting lab results.', style: TextStyle(fontSize: 11.5, color: AppColors.ink3)),
+                      const SizedBox(height: 6),
+                      TextField(controller: _diagnosisController, maxLines: 2, style: const TextStyle(fontSize: 13, color: AppColors.ink), decoration: _inputDecoration('e.g. Malaria, Pending Lab Results...')),
                       const SizedBox(height: 16),
                       const _SheetLabel('Vitals'),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Optional — record if measured during consultation.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
-                      ),
+                      const Text('Optional — record if measured during consultation.', style: TextStyle(fontSize: 11.5, color: AppColors.ink3)),
                       const SizedBox(height: 9),
                       IntrinsicHeight(
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'BP Systolic',
-                                hint: '120',
-                                unit: 'mmHg',
-                                controller: _bpSysController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
+                            Expanded(child: _VitalsField(label: 'BP Systolic',  hint: '120', unit: 'mmHg', controller: _bpSysController,  keyboardType: TextInputType.number)),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'BP Diastolic',
-                                hint: '80',
-                                unit: 'mmHg',
-                                controller: _bpDiaController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
+                            Expanded(child: _VitalsField(label: 'BP Diastolic', hint: '80',  unit: 'mmHg', controller: _bpDiaController,  keyboardType: TextInputType.number)),
                           ],
                         ),
                       ),
@@ -1471,45 +966,18 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'Temperature',
-                                hint: '36.5',
-                                unit: '°C',
-                                controller: _tempController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
+                            Expanded(child: _VitalsField(label: 'Temperature', hint: '36.5', unit: '°C', controller: _tempController,   keyboardType: TextInputType.number)),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'Weight',
-                                hint: '70',
-                                unit: 'kg',
-                                controller: _weightController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
+                            Expanded(child: _VitalsField(label: 'Weight',      hint: '70',   unit: 'kg', controller: _weightController, keyboardType: TextInputType.number)),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: _VitalsField(
-                                label: 'Height',
-                                hint: '170',
-                                unit: 'cm',
-                                controller: _heightController,
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
+                            Expanded(child: _VitalsField(label: 'Height',      hint: '170',  unit: 'cm', controller: _heightController, keyboardType: TextInputType.number)),
                           ],
                         ),
                       ),
                       const SizedBox(height: 22),
                       _PrimaryButton(
-                        label: _isSubmitting
-                            ? 'Saving…'
-                            : 'Complete Consultation',
-                        icon: Icons.check_rounded,
-                        loading: _isSubmitting,
+                        label: _isSubmitting ? 'Saving…' : 'Complete Consultation',
+                        icon: Icons.check_rounded, loading: _isSubmitting,
                         onTap: _isSubmitting ? () {} : _complete,
                       ),
                       const SizedBox(height: 10),
@@ -1527,10 +995,7 @@ class _ConsultationSheetState extends State<_ConsultationSheet> {
 }
 
 // ─────────────────────────────────────────────
-// LAB SHEET
-// Mode A — no lab sent: test selector + Send button
-// Mode B — lab sent: results + status chips
-//           all completed → Proceed to Prescribe
+// LAB SHEET — now loads tests from API
 // ─────────────────────────────────────────────
 
 class _LabSheet extends StatefulWidget {
@@ -1553,69 +1018,107 @@ class _LabSheet extends StatefulWidget {
 }
 
 class _LabSheetState extends State<_LabSheet> {
-  static const _kTests = [
-    'Malaria RDT',
-    'FBC',
-    'Typhoid (Widal)',
-    'Haemoglobin',
-    'Blood Glucose',
-    'Urine R/E',
-    'Stool R/E',
-    'Liver Function',
-  ];
-
-  final Set<String> _selected = {};
+  // ── loaded from GET /api/consultation/lab-tests/ ──
+  List<Map<String, dynamic>> _availableTests = [];
+  bool _testsLoading = true;
+  final Set<String> _selected           = {};
+  final _customTestController           = TextEditingController();
   bool _isSending = false;
+
+  // ── hardcoded fallback if API fails ──
+  static const _kFallbackTests = [
+    {'name': 'Malaria RDT',     'input_type': 'BOOLEAN'},
+    {'name': 'FBC',             'input_type': 'NUMBER',  'unit': 'cells/μL'},
+    {'name': 'Typhoid (Widal)', 'input_type': 'BOOLEAN'},
+    {'name': 'Haemoglobin',     'input_type': 'NUMBER',  'unit': 'g/dL'},
+    {'name': 'Blood Glucose',   'input_type': 'NUMBER',  'unit': 'mmol/L'},
+    {'name': 'Urine R/E',       'input_type': 'BOOLEAN'},
+    {'name': 'Stool R/E',       'input_type': 'TEXT'},
+    {'name': 'Liver Function',  'input_type': 'NUMBER',  'unit': 'U/L'},
+  ];
 
   bool get _allCompleted =>
       widget.existingResults.isNotEmpty &&
       widget.existingResults.every((r) => r.status == _LabStatus.completed);
 
+  @override
+  void initState() {
+    super.initState();
+    _loadLabTests();
+  }
+
+  @override
+  void dispose() {
+    _customTestController.dispose();
+    super.dispose();
+  }
+
+  // ── GET /api/consultation/lab-tests/ ──
+  Future<void> _loadLabTests() async {
+    try {
+      final data = await ApiService().getLabTests();
+      if (!mounted) return;
+      setState(() {
+        _availableTests = data.map<Map<String, dynamic>>((t) => {
+          'name':            t['name'],
+          'unit':            t['unit'],
+          'reference_range': t['reference_range'],
+          'input_type':      t['input_type'] ?? 'TEXT',
+        }).toList();
+        _testsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _availableTests = List<Map<String, dynamic>>.from(_kFallbackTests);
+        _testsLoading   = false;
+      });
+    }
+  }
+
   Future<void> _sendRequest() async {
-    if (_selected.isEmpty) {
+    final customTests = _customTestController.text.trim();
+    if (_selected.isEmpty && customTests.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select at least one test.')),
-      );
+        const SnackBar(content: Text('Select or type at least one test.')));
       return;
     }
     setState(() => _isSending = true);
-    // Backend: POST /api/v1/lab-requests
-    // Body: { visit_id, test_names: _selected.toList() }
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
+    try {
+      final allTests = [
+        ..._selected,
+        if (customTests.isNotEmpty) customTests,
+      ].join(', ');
 
-    final results = _selected
-        .map(
-          (t) => _LabResult(
-            testName: t,
-            value: 'Pending...',
-            flagged: false,
-            status: _LabStatus.sent,
-          ),
-        )
-        .toList();
-
-    widget.onLabSent(results);
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Lab request sent.'),
-        backgroundColor: AppColors.ok,
-      ),
-    );
+      await ApiService().sendLabRequest(
+        visitId:        widget.patient.visitId,
+        testsRequested: allTests,
+      );
+      if (!mounted) return;
+      final results = [
+        ..._selected,
+        if (customTests.isNotEmpty) customTests,
+      ].map((t) => _LabResult(testName: t, value: 'Pending...', flagged: false, status: _LabStatus.sent)).toList();
+      widget.onLabSent(results);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lab request sent.'), backgroundColor: AppColors.ok));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: ${e.toString()}'), backgroundColor: AppColors.err));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: widget.labAlreadySent ? 0.75 : 0.7,
+      initialChildSize: widget.labAlreadySent ? 0.75 : 0.85,
       minChildSize: 0.5,
-      maxChildSize: 0.92,
+      maxChildSize: 0.95,
       builder: (_, sc) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        ),
+        decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
         child: Column(
           children: [
             const _SheetHandle(),
@@ -1635,49 +1138,48 @@ class _LabSheetState extends State<_LabSheet> {
                     if (!widget.labAlreadySent) ...[
                       const _SheetLabel('Select Tests'),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Choose tests to request from the lab.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
-                      ),
+                      const Text('Choose tests to request from the lab.', style: TextStyle(fontSize: 11.5, color: AppColors.ink3)),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        children: _kTests.map((t) {
-                          final on = _selected.contains(t);
-                          return GestureDetector(
-                            onTap: () => setState(
-                              () => on ? _selected.remove(t) : _selected.add(t),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: on
-                                    ? AppColors.accentLight
-                                    : AppColors.surface2,
-                                border: Border.all(
-                                  color: on
-                                      ? AppColors.accent
-                                      : AppColors.border,
-                                  width: 1.5,
+
+                      // ── dynamic chips from API ──
+                      if (_testsLoading)
+                        const Center(child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: CircularProgressIndicator(),
+                        ))
+                      else
+                        Wrap(
+                          spacing: 7, runSpacing: 7,
+                          children: _availableTests.map((t) {
+                            final name = t['name'] as String;
+                            final on   = _selected.contains(name);
+                            return GestureDetector(
+                              onTap: () => setState(() => on ? _selected.remove(name) : _selected.add(name)),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: on ? AppColors.accentLight : AppColors.surface2,
+                                  border: Border.all(color: on ? AppColors.accent : AppColors.border, width: 1.5),
+                                  borderRadius: BorderRadius.circular(50),
                                 ),
-                                borderRadius: BorderRadius.circular(50),
+                                child: Text(name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: on ? AppColors.accent : AppColors.ink2)),
                               ),
-                              child: Text(
-                                t,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: on ? AppColors.accent : AppColors.ink2,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                            );
+                          }).toList(),
+                        ),
+
+                      // ── free text field for custom tests ──
+                      const SizedBox(height: 14),
+                      const _SheetLabel('Other Tests (optional)'),
+                      const SizedBox(height: 4),
+                      const Text('Type any additional tests not in the list above.', style: TextStyle(fontSize: 11.5, color: AppColors.ink3)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _customTestController,
+                        style: const TextStyle(fontSize: 13, color: AppColors.ink),
+                        decoration: _inputDecoration('e.g. ECG, X-Ray, Blood Culture...'),
                       ),
+
                       const SizedBox(height: 22),
                       _PrimaryButton(
                         label: _isSending ? 'Sending…' : 'Send Lab Request',
@@ -1693,37 +1195,17 @@ class _LabSheetState extends State<_LabSheet> {
                     if (widget.labAlreadySent) ...[
                       const _SheetLabel('Test Results'),
                       const SizedBox(height: 10),
-                      ...widget.existingResults.map(
-                        (r) => _LabResultRow(result: r),
-                      ),
-
+                      ...widget.existingResults.map((r) => _LabResultRow(result: r)),
                       if (_allCompleted) ...[
                         const SizedBox(height: 8),
-                        AppInfoBox(
-                          label: 'All results in',
-                          body:
-                              'All lab tests are complete. You can now prescribe.',
-                          variant: AppInfoVariant.accent,
-                        ),
+                        AppInfoBox(label: 'All results in', body: 'All lab tests are complete. You can now prescribe.', variant: AppInfoVariant.accent),
                         const SizedBox(height: 16),
-                        _PrimaryButton(
-                          label: 'Proceed to Prescribe',
-                          icon: Icons.medication_rounded,
-                          onTap: () {
-                            Navigator.pop(context);
-                            widget.onProceedToPrescribe();
-                          },
-                        ),
+                        _PrimaryButton(label: 'Proceed to Prescribe', icon: Icons.medication_rounded, onTap: () { Navigator.pop(context); widget.onProceedToPrescribe(); }),
                         const SizedBox(height: 10),
                         const _CancelButton(),
                       ] else ...[
                         const SizedBox(height: 10),
-                        AppInfoBox(
-                          label: 'Results pending',
-                          body:
-                              'Some tests are still being processed by the lab.',
-                          variant: AppInfoVariant.warn,
-                        ),
+                        AppInfoBox(label: 'Results pending', body: 'Some tests are still being processed by the lab.', variant: AppInfoVariant.warn),
                         const SizedBox(height: 16),
                         const _CancelButton(),
                       ],
@@ -1744,13 +1226,13 @@ class _LabResultRow extends StatelessWidget {
   const _LabResultRow({required this.result});
 
   String get _statusLabel => switch (result.status) {
-    _LabStatus.sent => 'Sent · Awaiting',
+    _LabStatus.sent      => 'Sent · Awaiting',
     _LabStatus.resultsIn => 'Results In',
     _LabStatus.completed => 'Completed',
   };
 
   AppStatus get _chipStatus => switch (result.status) {
-    _LabStatus.sent => AppStatus.neutral,
+    _LabStatus.sent      => AppStatus.neutral,
     _LabStatus.resultsIn => AppStatus.warn,
     _LabStatus.completed => AppStatus.ok,
   };
@@ -1760,46 +1242,19 @@ class _LabResultRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface2,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
+      decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  result.testName,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
-                ),
+                Text(result.testName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink)),
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Text(
-                      result.value,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: result.flagged ? AppColors.err : AppColors.ink2,
-                        fontWeight: result.flagged
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    if (result.flagged) ...[
-                      const SizedBox(width: 5),
-                      const Icon(
-                        Icons.flag_rounded,
-                        size: 12,
-                        color: AppColors.err,
-                      ),
-                    ],
+                    Text(result.value, style: TextStyle(fontSize: 12, color: result.flagged ? AppColors.err : AppColors.ink2, fontWeight: result.flagged ? FontWeight.w600 : FontWeight.normal)),
+                    if (result.flagged) ...[const SizedBox(width: 5), const Icon(Icons.flag_rounded, size: 12, color: AppColors.err)],
                   ],
                 ),
               ],
@@ -1812,16 +1267,10 @@ class _LabResultRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// PRESCRIBE SHEET
-// Lab preview at top → prescription fields → Save
-// Completing moves patient to completed tab
-// ─────────────────────────────────────────────
-
 class _PrescribeSheet extends StatefulWidget {
   final _QueuePatient patient;
   final List<_LabResult> labResults;
-  final ValueChanged<String> onComplete; // passes prescription summary
+  final ValueChanged<String> onComplete;
   final String consultNotes;
 
   const _PrescribeSheet({
@@ -1836,9 +1285,8 @@ class _PrescribeSheet extends StatefulWidget {
 }
 
 class _PrescribeSheetState extends State<_PrescribeSheet> {
-  // Backend: POST /api/v1/prescriptions
-  final _medicineController = TextEditingController();
-  final _dosageController = TextEditingController();
+  final _medicineController     = TextEditingController();
+  final _dosageController       = TextEditingController();
   final _instructionsController = TextEditingController();
   bool _isSubmitting = false;
 
@@ -1852,44 +1300,47 @@ class _PrescribeSheetState extends State<_PrescribeSheet> {
 
   Future<void> _submit() async {
     if (_medicineController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Enter a medicine name.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a medicine name.')));
       return;
     }
     setState(() => _isSubmitting = true);
-    // Backend: POST /api/v1/prescriptions
-    // Body: { visit_id, medicine_name, dosage, instructions }
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-
-    final summary =
-        '${_medicineController.text.trim()} · ${_dosageController.text.trim()}';
-    widget.onComplete(summary);
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    try {
+      await ApiService().createPrescriptions(
+        visitId: widget.patient.visitId,
+        prescriptions: [
+          {
+            'medicine_name': _medicineController.text.trim(),
+            'dosage':        _dosageController.text.trim(),
+            'duration':      '',
+            'instructions':  _instructionsController.text.trim(),
+          }
+        ],
+      );
+      if (!mounted) return;
+      final summary = '${_medicineController.text.trim()} · ${_dosageController.text.trim()}';
+      widget.onComplete(summary);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Prescription for ${widget.patient.name} saved.'),
         backgroundColor: AppColors.ok,
-      ),
-    );
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: ${e.toString()}'), backgroundColor: AppColors.err));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final relevantResults = widget.labResults
-        .where((r) => r.status != _LabStatus.sent)
-        .toList();
+    final relevantResults = widget.labResults.where((r) => r.status != _LabStatus.sent).toList();
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.88,
-      minChildSize: 0.6,
-      maxChildSize: 0.95,
+      initialChildSize: 0.88, minChildSize: 0.6, maxChildSize: 0.95,
       builder: (_, sc) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        ),
+        decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
         child: Column(
           children: [
             const _SheetHandle(),
@@ -1904,146 +1355,60 @@ class _PrescribeSheetState extends State<_PrescribeSheet> {
                     const SizedBox(height: 16),
                     const Divider(color: AppColors.border, height: 1),
                     const SizedBox(height: 16),
-
-                    // ── Lab preview ──
                     const _SheetLabel('Lab Results'),
                     const SizedBox(height: 8),
                     if (relevantResults.isEmpty)
-                      AppInfoBox(
-                        label: 'No lab results',
-                        body:
-                            'No labs were requested or results are still pending.',
-                        variant: AppInfoVariant.warn,
-                      )
+                      AppInfoBox(label: 'No lab results', body: 'No labs were requested or results are still pending.', variant: AppInfoVariant.warn)
                     else
                       Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface2,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
-                        ),
+                        decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
                         child: Column(
                           children: List.generate(relevantResults.length, (i) {
-                            final r = relevantResults[i];
+                            final r      = relevantResults[i];
                             final isLast = i == relevantResults.length - 1;
                             return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 9,
-                              ),
-                              decoration: BoxDecoration(
-                                border: isLast
-                                    ? null
-                                    : const Border(
-                                        bottom: BorderSide(
-                                          color: AppColors.border,
-                                        ),
-                                      ),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                              decoration: BoxDecoration(border: isLast ? null : const Border(bottom: BorderSide(color: AppColors.border))),
                               child: Row(
                                 children: [
-                                  if (r.flagged)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 6),
-                                      child: Icon(
-                                        Icons.flag_rounded,
-                                        size: 12,
-                                        color: AppColors.err,
-                                      ),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      r.testName,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.ink2,
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    r.value,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: r.flagged
-                                          ? AppColors.err
-                                          : AppColors.ok,
-                                    ),
-                                  ),
+                                  if (r.flagged) const Padding(padding: EdgeInsets.only(right: 6), child: Icon(Icons.flag_rounded, size: 12, color: AppColors.err)),
+                                  Expanded(child: Text(r.testName, style: const TextStyle(fontSize: 12, color: AppColors.ink2))),
+                                  Text(r.value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: r.flagged ? AppColors.err : AppColors.ok)),
                                 ],
                               ),
                             );
                           }),
                         ),
                       ),
-
                     const SizedBox(height: 20),
-
-                    // ── Prescription fields ──
                     const _SheetLabel('Prescription'),
                     const SizedBox(height: 10),
-                    _SheetInput(
-                      controller: _medicineController,
-                      label: 'Medicine Name',
-                      hint: 'e.g. Artemether-Lumefantrine 80/480mg',
-                    ),
+                    _SheetInput(controller: _medicineController, label: 'Medicine Name',       hint: 'e.g. Artemether-Lumefantrine 80/480mg'),
                     const SizedBox(height: 10),
-                    _SheetInput(
-                      controller: _dosageController,
-                      label: 'Dosage & Schedule',
-                      hint: 'e.g. 4 tablets at 0h, 8h, 24h, 36h, 48h, 60h',
-                    ),
+                    _SheetInput(controller: _dosageController,   label: 'Dosage & Schedule',  hint: 'e.g. 4 tablets at 0h, 8h, 24h, 36h, 48h, 60h'),
                     const SizedBox(height: 10),
-                    _SheetInput(
-                      controller: _instructionsController,
-                      label: "Doctor's Instructions",
-                      hint: 'e.g. Take with food. Complete full course.',
-                      maxLines: 3,
-                    ),
-
+                    _SheetInput(controller: _instructionsController, label: "Doctor's Instructions", hint: 'e.g. Take with food. Complete full course.', maxLines: 3),
                     const SizedBox(height: 22),
                     _PrimaryButton(
                       label: _isSubmitting ? 'Saving…' : 'Save Prescription',
-                      icon: Icons.save_rounded,
-                      loading: _isSubmitting,
+                      icon: Icons.save_rounded, loading: _isSubmitting,
                       onTap: _isSubmitting ? () {} : _submit,
                     ),
                     const SizedBox(height: 10),
                     GestureDetector(
                       onTap: () {
-                        // Backend: POST /api/v1/consultations — prescription: null
-                        widget.onComplete(
-                          widget.consultNotes.isEmpty
-                              ? ''
-                              : widget.consultNotes,
-                        );
+                        widget.onComplete(widget.consultNotes.isEmpty ? '' : widget.consultNotes);
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '${widget.patient.name} completed — no prescription.',
-                            ),
-                            backgroundColor: AppColors.ok,
-                          ),
-                        );
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('${widget.patient.name} completed — no prescription.'),
+                          backgroundColor: AppColors.ok,
+                        ));
                       },
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 13),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface2,
-                          borderRadius: BorderRadius.circular(50),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: const Text(
-                          'No Prescription Needed',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink2,
-                          ),
-                        ),
+                        decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(50), border: Border.all(color: AppColors.border)),
+                        child: const Text('No Prescription Needed', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink2)),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -2059,23 +1424,16 @@ class _PrescribeSheetState extends State<_PrescribeSheet> {
   }
 }
 
-// ─────────────────────────────────────────────
-// SHARED SHEET COMPONENTS
-// ─────────────────────────────────────────────
+// ── Shared sheet components ──
 
 class _SheetHandle extends StatelessWidget {
   const _SheetHandle();
-
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 12, bottom: 16),
-      width: 38,
-      height: 4,
-      decoration: BoxDecoration(
-        color: AppColors.border,
-        borderRadius: BorderRadius.circular(2),
-      ),
+      width: 38, height: 4,
+      decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
     );
   }
 }
@@ -2083,7 +1441,6 @@ class _SheetHandle extends StatelessWidget {
 class _SheetHeader extends StatelessWidget {
   final String title;
   final _QueuePatient patient;
-
   const _SheetHeader({required this.title, required this.patient});
 
   @override
@@ -2094,32 +1451,22 @@ class _SheetHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
+              Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.ink)),
               const SizedBox(height: 2),
-              Text(
-                '${patient.name} · #${patient.queueId}',
-                style: const TextStyle(fontSize: 12, color: AppColors.ink3),
-              ),
+              Text('${patient.name} · ${patient.queueId}', style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
             ],
           ),
         ),
         AppStatusChip(
           label: switch (patient.severity) {
-            _Severity.urgent => 'Urgent',
+            _Severity.urgent   => 'Urgent',
             _Severity.moderate => 'Moderate',
-            _Severity.routine => 'Routine',
+            _Severity.routine  => 'Routine',
           },
           status: switch (patient.severity) {
-            _Severity.urgent => AppStatus.err,
+            _Severity.urgent   => AppStatus.err,
             _Severity.moderate => AppStatus.warn,
-            _Severity.routine => AppStatus.neutral,
+            _Severity.routine  => AppStatus.neutral,
           },
         ),
       ],
@@ -2130,18 +1477,9 @@ class _SheetHeader extends StatelessWidget {
 class _SheetLabel extends StatelessWidget {
   final String text;
   const _SheetLabel(this.text);
-
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 10.5,
-        fontWeight: FontWeight.w700,
-        color: AppColors.ink3,
-        letterSpacing: 0.07 * 10.5,
-      ),
-    );
+    return Text(text.toUpperCase(), style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.ink3, letterSpacing: 0.07 * 10.5));
   }
 }
 
@@ -2150,13 +1488,7 @@ class _SheetInput extends StatelessWidget {
   final String label;
   final String hint;
   final int maxLines;
-
-  const _SheetInput({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    this.maxLines = 1,
-  });
+  const _SheetInput({required this.controller, required this.label, required this.hint, this.maxLines = 1});
 
   @override
   Widget build(BuildContext context) {
@@ -2165,12 +1497,7 @@ class _SheetInput extends StatelessWidget {
       children: [
         _SheetLabel(label),
         const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: const TextStyle(fontSize: 13, color: AppColors.ink),
-          decoration: _inputDecoration(hint),
-        ),
+        TextField(controller: controller, maxLines: maxLines, style: const TextStyle(fontSize: 13, color: AppColors.ink), decoration: _inputDecoration(hint)),
       ],
     );
   }
@@ -2181,13 +1508,7 @@ class _PrimaryButton extends StatelessWidget {
   final IconData icon;
   final bool loading;
   final VoidCallback onTap;
-
-  const _PrimaryButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.loading = false,
-  });
+  const _PrimaryButton({required this.label, required this.icon, required this.onTap, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -2200,46 +1521,19 @@ class _PrimaryButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: loading
-                  ? [AppColors.ink3, AppColors.ink3]
-                  : [AppColors.accent, AppColors.accentDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              colors: loading ? [AppColors.ink3, AppColors.ink3] : [AppColors.accent, AppColors.accentDark],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(50),
-            boxShadow: loading
-                ? []
-                : [
-                    BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+            boxShadow: loading ? [] : [BoxShadow(color: AppColors.accent.withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 5))],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (loading)
-                const SizedBox(
-                  width: 17,
-                  height: 17,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              else
-                Icon(icon, color: Colors.white, size: 17),
+              if (loading) const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              else Icon(icon, color: Colors.white, size: 17),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
+              Text(label, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Colors.white)),
             ],
           ),
         ),
@@ -2250,7 +1544,6 @@ class _PrimaryButton extends StatelessWidget {
 
 class _CancelButton extends StatelessWidget {
   const _CancelButton();
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -2259,45 +1552,22 @@ class _CancelButton extends StatelessWidget {
         onPressed: () => Navigator.pop(context),
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(9),
-            side: const BorderSide(color: AppColors.border, width: 1.5),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9), side: const BorderSide(color: AppColors.border, width: 1.5)),
         ),
-        child: const Text(
-          'Cancel',
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink3,
-          ),
-        ),
+        child: const Text('Cancel', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.ink3)),
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// INPUT DECORATION HELPER
-// ─────────────────────────────────────────────
 
 InputDecoration _inputDecoration(String hint) => InputDecoration(
   hintText: hint,
   hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 12.5),
   filled: true,
   fillColor: AppColors.surface2,
-  border: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(9),
-    borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-  ),
-  enabledBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(9),
-    borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-  ),
-  focusedBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(9),
-    borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-  ),
+  border:        OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: AppColors.border, width: 1.5)),
+  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: AppColors.border, width: 1.5)),
+  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
   contentPadding: const EdgeInsets.all(12),
 );
 
@@ -2307,61 +1577,28 @@ class _VitalsField extends StatelessWidget {
   final String unit;
   final TextEditingController controller;
   final TextInputType keyboardType;
-
-  const _VitalsField({
-    required this.label,
-    required this.hint,
-    required this.unit,
-    required this.controller,
-    this.keyboardType = TextInputType.text,
-  });
+  const _VitalsField({required this.label, required this.hint, required this.unit, required this.controller, this.keyboardType = TextInputType.text});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink3,
-            letterSpacing: 0.4,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.ink3, letterSpacing: 0.4)),
         const SizedBox(height: 4),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           style: const TextStyle(fontSize: 13, color: AppColors.ink),
           decoration: InputDecoration(
-            hintText: hint,
-            suffixText: unit,
-            suffixStyle: const TextStyle(
-              fontSize: 11,
-              color: AppColors.ink3,
-              fontFamily: 'DMMono',
-            ),
+            hintText: hint, suffixText: unit,
+            suffixStyle: const TextStyle(fontSize: 11, color: AppColors.ink3, fontFamily: 'DMMono'),
             hintStyle: const TextStyle(fontSize: 12, color: AppColors.ink3),
-            filled: true,
-            fillColor: AppColors.surface2,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 10,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9),
-              borderSide: BorderSide(color: AppColors.accent, width: 1.5),
-            ),
+            filled: true, fillColor: AppColors.surface2,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            border:        OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: AppColors.border)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: AppColors.border)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: BorderSide(color: AppColors.accent, width: 1.5)),
           ),
         ),
       ],

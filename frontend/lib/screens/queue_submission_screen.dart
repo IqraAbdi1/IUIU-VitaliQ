@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../shared/widgets.dart';
+import '../services/api_service.dart';
 import 'symptom_submission_sheet.dart';
 
 // ─────────────────────────────────────────────
@@ -80,12 +81,26 @@ class _QueueSubmissionScreenState extends State<QueueSubmissionScreen> {
   late Duration _remaining;
   bool _editWindowOpen = true;
 
-  // We use the mock submission as the live data source
-  _Submission _submission = _mockSubmission;
+  // ── use real data from ApiService if available, fall back to mock ──
+  late _Submission _submission;
 
   @override
   void initState() {
     super.initState();
+
+    // ── build submission from real API data stored after check-in ──
+    _submission = _Submission(
+      queueNumber:  ApiService.currentQueuePosition ?? _mockSubmission.queueNumber,
+      visitId:      ApiService.currentVisitId?.toString() ?? _mockSubmission.visitId,
+      submittedAt:  _mockSubmission.submittedAt,
+      duration:     _mockSubmission.duration,
+      symptoms:     _mockSubmission.symptoms,
+      temperature:  _mockSubmission.temperature,
+      notes:        _mockSubmission.notes,
+      mlSeverity:   _capitalize(ApiService.currentSeverity) ?? _mockSubmission.mlSeverity,
+      queueTotal:   _mockSubmission.queueTotal,
+    );
+
     // Start the countdown from full edit window
     _remaining = const Duration(minutes: _kEditWindowMinutes);
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -99,6 +114,12 @@ class _QueueSubmissionScreenState extends State<QueueSubmissionScreen> {
         }
       });
     });
+  }
+
+  // ── capitalize first letter only e.g. MINOR → Minor ──
+  String? _capitalize(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return value[0].toUpperCase() + value.substring(1).toLowerCase();
   }
 
   @override
@@ -150,6 +171,10 @@ class _QueueSubmissionScreenState extends State<QueueSubmissionScreen> {
           ),
           TextButton(
             onPressed: () {
+              // ── clear stored visit data on cancel ──
+              ApiService.currentQueuePosition = null;
+              ApiService.currentVisitId       = null;
+              ApiService.currentSeverity      = null;
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
               widget.onCancelled();
@@ -421,17 +446,13 @@ class _StatusHeroCard extends StatelessWidget {
               _HeroStat(
                 label: 'Position',
                 value: '#$queueNumber',
-                color: const Color(
-                  0xFF7ECFF5,
-                ), // heroStatBlue — AppColors.heroStatBlue
+                color: const Color(0xFF7ECFF5), // heroStatBlue
               ),
               const SizedBox(width: 10),
               _HeroStat(
                 label: 'Ahead of you',
                 value: '${queueNumber - 1}',
-                color: const Color(
-                  0xFFFFBE50,
-                ), // heroStatAmber — AppColors.heroStatAmber
+                color: const Color(0xFFFFBE50), // heroStatAmber
               ),
               const SizedBox(width: 10),
               _HeroStat(

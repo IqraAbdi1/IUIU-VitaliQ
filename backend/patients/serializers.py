@@ -26,10 +26,11 @@ class VisitCreateSerializer(serializers.Serializer):
 
     def validate_reg_no(self, value):
         try:
-            patient = PatientProfile.objects.get(reg_no=value)
+            PatientProfile.objects.get(reg_no=value)
             return value
         except PatientProfile.DoesNotExist:
             raise serializers.ValidationError(f"No patient found with reg_no '{value}'")
+
 
 class VisitDetailSerializer(serializers.ModelSerializer):
     symptoms     = VisitSymptomSerializer(source='visit_symptoms', many=True, read_only=True)
@@ -48,10 +49,18 @@ class VisitDetailSerializer(serializers.ModelSerializer):
 class QueueSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.username', read_only=True)
     reg_no       = serializers.CharField(source='patient.reg_no',   read_only=True)
+    # ── symptoms list — needed for doctor consultation sheet pre-selection ──
+    symptoms     = serializers.SerializerMethodField()
+    # ── doctor_note — ML assessment stored in other_symptoms ──
+    doctor_note  = serializers.CharField(source='other_symptoms', read_only=True)
+
+    def get_symptoms(self, obj):
+        return [vs.symptom.name for vs in obj.visit_symptoms.all()]
 
     class Meta:
         model  = Visit
         fields = [
             'id', 'patient_name', 'reg_no',
-            'queue_position', 'queue_category', 'status', 'created_at'
+            'queue_position', 'queue_category', 'status',
+            'created_at', 'symptoms', 'doctor_note',
         ]

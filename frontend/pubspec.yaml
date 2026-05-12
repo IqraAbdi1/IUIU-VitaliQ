@@ -24,6 +24,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/System Logo.png
+    - assets/images/vitaliq_logo.png
+    - assets/images/vitaliq_logo_no_text.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
