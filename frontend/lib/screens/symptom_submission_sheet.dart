@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../shared/widgets.dart';
+import '../services/api_service.dart';
 
 // ─────────────────────────────────────────────
 // DATA MODEL — returned by the sheet on submit
@@ -31,13 +32,13 @@ const _kSymptoms = [
   'Headache',
   'Nausea',
   'Fatigue',
-  'Chills',
-  'Body aches',
-  'Diarrhoea',
-  'Chest pain',
-  'Breathlessness',
-  'Sore throat',
+  'Body Aches',
+  'Diarrhea',
+  'Chest Pain',
+  'Shortness of Breath',
+  'Sore Throat',
   'Vomiting',
+  'Dizziness',
 ];
 
 const _kDurations = ['Under 24 hours', '1–3 days', '4–7 days', 'Over a week'];
@@ -131,29 +132,59 @@ class _SymptomSheetState extends State<_SymptomSheet> {
         : _notesController.text.trim(),
   );
 
-  Future<void> _handleSubmit() async {
+ Future<void> _handleSubmit() async {
     if (!_canSubmit) return;
     setState(() => _isSubmitting = true);
 
-    // TODO: replace with real API call
-    // Backend: POST /api/v1/visits/submit
-    // Body: { patient_id, duration, symptoms: [...], temperature, notes }
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
+    try {
+      // get symptom IDs from backend names
+      final allSymptoms = await ApiService().getSymptoms();
+      final symptomIds = allSymptoms
+          .where((s) => _selectedSymptoms.contains(s['name']))
+          .map<int>((s) => s['id'] as int)
+          .toList();
 
-    final data = _buildData();
-    _submittedData = data;
+      // get patient reg_no from stored login data
+      final regNo = ApiService.currentRegNo ?? '';
 
-    // Show mid-screen confirmation overlay
-    // Auto-dismisses after 30 seconds or on tap
-    setState(() {
-      _isSubmitting = false;
-      _showConfirmation = true;
-    });
+      // call backend
+      final result = await ApiService().submitVisit(
+        regNo: regNo,
+        symptomIds: symptomIds,
+        otherSymptoms: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+      );
 
-    await Future.delayed(const Duration(seconds: 30));
-    if (!mounted) return;
-    _dismiss();
+      if (!mounted) return;
+
+      final data = _buildData();
+      _submittedData = data;
+
+      // store queue position for home screen
+      ApiService.currentQueuePosition = result['queue_position'];
+      ApiService.currentVisitId       = result['visit_id'];
+      ApiService.currentSeverity      = result['severity'];
+
+      setState(() {
+        _isSubmitting = false;
+        _showConfirmation = true;
+      });
+
+      await Future.delayed(const Duration(seconds: 30));
+      if (!mounted) return;
+      _dismiss();
+
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _dismiss() {

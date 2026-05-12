@@ -1,0 +1,51 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shopify/screens/homepage.dart';
+import 'package:shopify/services/auth_service.dart';
+import 'package:shopify/provider/cartprovider.dart';
+import 'package:shopify/services/product_service.dart';
+import 'package:shopify/provider/favorites_provider.dart';
+
+void main() {
+  group('HomePage Widget and Pure Dart Unit Tests', () {
+    testWidgets('HomePage builds without crashing', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthService>.value(value: AuthService()),
+            ChangeNotifierProvider<CartProvider>.value(value: CartProvider()),
+            ChangeNotifierProvider<FavoritesProvider>.value(
+              value: FavoritesProvider(),
+            ), // <-- Add this line
+            Provider<ProductService>.value(value: ProductService()),
+          ],
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      expect(find.byType(HomePage), findsOneWidget);
+    });
+
+    test('String interpolation works', () {
+      int count = 3;
+      expect('Cart: $count', 'Cart: 3');
+    });
+
+    test('List add and length', () {
+      final list = <int>[];
+      list.add(1);
+      expect(list.length, 1);
+    });
+
+    test('Map lookup', () {
+      final map = {'a': 1};
+      expect(map['a'], 1);
+    });
+
+    test('Simple arithmetic', () {
+      expect(2 + 2, 4);
+    });
+  });
+}

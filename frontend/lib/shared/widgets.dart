@@ -88,6 +88,7 @@ class AppStatusChip extends StatelessWidget {
     AppStatus.err => AppColors.errBg,
     AppStatus.accent => AppColors.accentLight,
     AppStatus.neutral => AppColors.bg2,
+    AppStatus.urgent => AppColors.urgentBg,
   };
 
   Color get _fg => switch (status) {
@@ -96,6 +97,7 @@ class AppStatusChip extends StatelessWidget {
     AppStatus.err => AppColors.err,
     AppStatus.accent => AppColors.accent,
     AppStatus.neutral => AppColors.ink2,
+    AppStatus.urgent => AppColors.urgentFg,
   };
 
   Color get _border => switch (status) {
@@ -104,6 +106,7 @@ class AppStatusChip extends StatelessWidget {
     AppStatus.err => AppColors.errBorder,
     AppStatus.accent => AppColors.accentMid,
     AppStatus.neutral => AppColors.border,
+    AppStatus.urgent => AppColors.urgentBorder,
   };
 
   @override
