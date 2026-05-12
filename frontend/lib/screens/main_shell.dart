@@ -338,7 +338,13 @@ class _DesktopLayout extends StatelessWidget {
               thickness: 1,
               color: AppColors.border,
             ),
-            const _CampusImagePanel(),
+            SizedBox(
+              width: (MediaQuery.of(context).size.width * 0.28).clamp(
+                150.0,
+                500.0,
+              ),
+              child: const _CampusImagePanel(),
+            ),
           ],
         ),
       ),
@@ -383,7 +389,7 @@ class _CampusImagePanelState extends State<_CampusImagePanel> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: _kImagePanelWidth,
+      width: double.infinity,
       // ClipRect ensures the image is clipped by the container bounds.
       // Align.bottomCenter keeps the bottom anchored — top clips away
       // naturally as the window height is reduced.
