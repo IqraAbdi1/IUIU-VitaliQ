@@ -78,7 +78,7 @@ class _DashStats {
 }
 
 final _mockLabResults = <String, List<_LabResult>>{};
-//final _mockCompleted  = <_CompletedPatient>[];
+final _mockCompleted = <_CompletedPatient>[];
 
 class DoctorQueueScreen extends StatefulWidget {
   const DoctorQueueScreen({super.key});
@@ -105,13 +105,13 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   );
 
   // Backend: GET /api/v1/queue?role=doctor&status=active
-  List<_QueuePatient> _patients = List.from(_mockPatients);
+  List<_QueuePatient> _patients = [];
 
   // Backend: GET /api/v1/queue?role=doctor&status=awaiting_lab
   List<_QueuePatient> _awaitingLab = [];
 
   // Backend: GET /api/v1/queue?role=doctor&status=completed
-  List<_CompletedPatient> _completed = List.from(_mockCompleted);
+  List<_CompletedPatient> _completed = [];
 
   _QueueTab _activeTab = _QueueTab.active;
 

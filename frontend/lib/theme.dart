@@ -35,7 +35,7 @@ class AppColors {
   static const Color hero3 = Color(0xFF1D3A5C);
 
   // Status — OK
-  static const Color ok = Color(0xFF16714A);
+  static const Color ok = Color.fromARGB(255, 37, 208, 134);
   static const Color okBg = Color(0xFFEAFAF2);
   static const Color okBorder = Color(0xFF96DEBB);
 
