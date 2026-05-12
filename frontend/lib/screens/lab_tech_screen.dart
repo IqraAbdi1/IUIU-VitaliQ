@@ -1,37 +1,40 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../shared/widgets.dart';
+import '../services/api_service.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // MODELS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 enum _LabRequestStatus { urgent, pending, completed }
 
 class _LabTest {
-  final String name; // Backend: lab_test.name
-  final String? unit; // Backend: lab_test.unit
-  final String? referenceRange; // Backend: lab_test.reference_range
-  final String? placeholder; // Backend: lab_test.input_placeholder
+  final String name;
+  final String? unit;
+  final String? referenceRange;
+  final String inputType; // BOOLEAN, NUMBER, TEXT
 
   const _LabTest({
     required this.name,
     this.unit,
     this.referenceRange,
-    this.placeholder,
+    this.inputType = 'TEXT',
   });
 }
 
 class _LabRequest {
-  final String requestId; // Backend: lab_request.id
-  final String patientName; // Backend: patient.full_name
-  final String patientId; // Backend: patient.username
-  final String doctorName; // Backend: doctor.full_name
-  final String requestedAt; // Backend: lab_request.requested_at
-  final _LabRequestStatus status; // Backend: lab_request.status
-  final List<_LabTest> tests; // Backend: lab_request.tests[]
+  final int visitId;
+  final String requestId;
+  final String patientName;
+  final String patientId;
+  final String doctorName;
+  final String requestedAt;
+  final _LabRequestStatus status;
+  final List<_LabTest> tests;
 
   const _LabRequest({
+    required this.visitId,
     required this.requestId,
     required this.patientName,
     required this.patientId,
@@ -43,11 +46,11 @@ class _LabRequest {
 }
 
 class _LabResult {
-  final String testName; // Backend: lab_result.test_name
-  final String value; // Backend: lab_result.result_value
-  final String? unit; // Backend: lab_result.unit
-  final String? referenceRange; // Backend: lab_result.reference_range
-  final String? flag; // Backend: lab_result.flag (H / L / null)
+  final String testName;
+  final String value;
+  final String? unit;
+  final String? referenceRange;
+  final String? flag;
 
   const _LabResult({
     required this.testName,
@@ -59,13 +62,13 @@ class _LabResult {
 }
 
 class _CompletedRequest {
-  final String requestId; // Backend: lab_request.id
-  final String patientName; // Backend: patient.full_name
-  final String patientId; // Backend: patient.username
-  final String techName; // Backend: lab_tech.full_name
-  final String completedAt; // Backend: lab_result.uploaded_at
-  final List<_LabResult> results; // Backend: lab_result.result_data[]
-  final bool notified; // Backend: lab_result.notified
+  final String requestId;
+  final String patientName;
+  final String patientId;
+  final String techName;
+  final String completedAt;
+  final List<_LabResult> results;
+  final bool notified;
 
   const _CompletedRequest({
     required this.requestId,
@@ -78,158 +81,23 @@ class _CompletedRequest {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
-// Backend: GET /api/v1/lab-requests?status=pending   (pending tab)
-//          GET /api/v1/lab-requests?status=completed  (completed tab)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// ONE MOCK — fallback only if API completely fails
+// ─────────────────────────────────────────────
+const _mockFallbackRequest = _LabRequest(
+  visitId:     0,
+  requestId:   'LR-000',
+  patientName: 'No connection',
+  patientId:   '—',
+  doctorName:  '—',
+  requestedAt: '—',
+  status:      _LabRequestStatus.pending,
+  tests:       [_LabTest(name: 'Check connection', inputType: 'TEXT')],
+);
 
-final List<_LabRequest> _mockPendingRequests = [
-  const _LabRequest(
-    requestId: 'LR-2025-042',
-    patientName: 'Khalid Abdelgadir',
-    patientId: 'STU-2024-1092',
-    doctorName: 'Dr. Kato Emmanuel',
-    requestedAt: '10:32 AM',
-    status: _LabRequestStatus.urgent,
-    tests: [
-      _LabTest(name: 'Malaria RDT', placeholder: 'Positive / Negative'),
-      _LabTest(
-        name: 'Haemoglobin',
-        unit: 'g/dL',
-        referenceRange: '12–16',
-        placeholder: 'e.g. 10.8',
-      ),
-      _LabTest(
-        name: 'WBC Count',
-        unit: '/μL',
-        referenceRange: '4,000–11,000',
-        placeholder: 'e.g. 12400',
-      ),
-      _LabTest(
-        name: 'Platelet Count',
-        unit: '/μL',
-        referenceRange: '150,000–400,000',
-        placeholder: 'e.g. 88000',
-      ),
-    ],
-  ),
-  const _LabRequest(
-    requestId: 'LR-2025-047',
-    patientName: 'Amina Nakato',
-    patientId: 'STU-2024-0842',
-    doctorName: 'Dr. Ssali Ibrahim',
-    requestedAt: '11:15 AM',
-    status: _LabRequestStatus.pending,
-    tests: [
-      _LabTest(
-        name: 'Typhoid (Widal Test)',
-        placeholder: 'Positive / Negative',
-      ),
-      _LabTest(
-        name: 'Haemoglobin',
-        unit: 'g/dL',
-        referenceRange: '12–16',
-        placeholder: 'e.g. 12.0',
-      ),
-    ],
-  ),
-  const _LabRequest(
-    requestId: 'LR-2025-051',
-    patientName: 'Omar Suleiman',
-    patientId: 'STU-2024-0319',
-    doctorName: 'Dr. Kato Emmanuel',
-    requestedAt: '12:08 PM',
-    status: _LabRequestStatus.pending,
-    tests: [
-      _LabTest(name: 'Urinalysis', placeholder: 'Normal / Abnormal'),
-      _LabTest(name: 'Urine Culture', placeholder: 'Positive / Negative'),
-      _LabTest(
-        name: 'Creatinine',
-        unit: 'mg/dL',
-        referenceRange: '0.6–1.2',
-        placeholder: 'e.g. 0.9',
-      ),
-    ],
-  ),
-  const _LabRequest(
-    requestId: 'LR-2025-058',
-    patientName: 'Fatima Osman',
-    patientId: 'STU-2024-0901',
-    doctorName: 'Dr. Ssali Ibrahim',
-    requestedAt: '1:44 PM',
-    status: _LabRequestStatus.pending,
-    tests: [
-      _LabTest(name: 'ECG Reading', placeholder: 'e.g. Normal sinus rhythm'),
-      _LabTest(
-        name: 'Troponin I',
-        unit: 'ng/mL',
-        referenceRange: '< 0.04',
-        placeholder: 'e.g. 0.01',
-      ),
-    ],
-  ),
-];
-
-final List<_CompletedRequest> _mockCompletedRequests = [
-  const _CompletedRequest(
-    requestId: 'LR-2025-039',
-    patientName: 'Fatima Osman',
-    patientId: 'STU-2024-0901',
-    techName: 'Tech. Yusuf Kamau',
-    completedAt: '9:48 AM',
-    notified: true,
-    results: [
-      _LabResult(testName: 'Malaria RDT', value: 'POSITIVE', flag: 'H'),
-      _LabResult(
-        testName: 'Haemoglobin',
-        value: '10.8',
-        unit: 'g/dL',
-        referenceRange: '12–16',
-        flag: 'L',
-      ),
-    ],
-  ),
-  const _CompletedRequest(
-    requestId: 'LR-2025-031',
-    patientName: 'Abdi Hassan',
-    patientId: 'STU-2024-0774',
-    techName: 'Tech. Yusuf Kamau',
-    completedAt: 'Yesterday · 3:22 PM',
-    notified: true,
-    results: [
-      _LabResult(testName: 'Typhoid (Widal Test)', value: 'NEGATIVE'),
-      _LabResult(
-        testName: 'Haemoglobin',
-        value: '13.4',
-        unit: 'g/dL',
-        referenceRange: '12–16',
-      ),
-    ],
-  ),
-  const _CompletedRequest(
-    requestId: 'LR-2025-028',
-    patientName: 'Zainab Musa',
-    patientId: 'STU-2024-0655',
-    techName: 'Tech. Yusuf Kamau',
-    completedAt: 'Yesterday · 11:05 AM',
-    notified: true,
-    results: [
-      _LabResult(testName: 'Urinalysis', value: 'ABNORMAL', flag: 'H'),
-      _LabResult(
-        testName: 'Creatinine',
-        value: '1.5',
-        unit: 'mg/dL',
-        referenceRange: '0.6–1.2',
-        flag: 'H',
-      ),
-    ],
-  ),
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 class LabTechScreen extends StatefulWidget {
   const LabTechScreen({super.key});
@@ -239,42 +107,192 @@ class LabTechScreen extends StatefulWidget {
 }
 
 class _LabTechScreenState extends State<LabTechScreen> {
-  int _tabIndex = 0; // 0 = Pending, 1 = Completed
+  int  _tabIndex  = 0;
+  bool _isLoading = true;
 
-  // Local list so we can remove items after upload (simulates submit)
-  // Backend: replace with real API state management
-  late List<_LabRequest> _pendingRequests;
+  List<_LabRequest>       _pendingRequests   = [];
+  List<_CompletedRequest> _completedRequests = [];
+
+  // lookup map built from GET /api/consultation/lab-tests/
+  Map<String, _LabTest> _testMeta = {};
 
   @override
   void initState() {
     super.initState();
-    _pendingRequests = List.from(_mockPendingRequests);
+    _loadLabData();
   }
 
-  void _onUploaded(String requestId) {
-    // Backend: after POST /api/v1/lab-results/upload succeeds,
-    // remove from pending and refresh completed list
+  // ── fetch lab dashboard + lab test metadata in parallel ──
+  // GET /api/lab/dashboard/         → pending requests
+  // GET /api/consultation/lab-tests/ → test metadata (unit, reference, inputType)
+  Future<void> _loadLabData() async {
+  // ── PART 1: pending requests + test metadata ──
+  try {
+    final results = await Future.wait([
+      ApiService().getLabDashboard(),
+      ApiService().getLabTests(),
+      ApiService().getNotifications(),
+      
+
+    ]);
+
+    final data     = results[0] as Map<String, dynamic>;
+    final labTests = results[1] as List<dynamic>;
+
+    _testMeta = {
+      for (final t in labTests)
+        (t['name'] as String): _LabTest(
+          name:           t['name'],
+          unit:           t['unit'],
+          referenceRange: t['reference_range'],
+          inputType:      t['input_type'] ?? 'TEXT',
+        )
+    };
+
+    final List rawPending = data['pending_requests'] ?? [];
+    final pending = rawPending.map<_LabRequest>((item) {
+      final testsStr = item['tests_requested'] ?? '';
+      final tests    = testsStr
+          .toString()
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .map((name) => _testMeta[name] ?? _LabTest(name: name, inputType: 'TEXT'))
+          .toList();
+
+      final requestedAt = item['requested_at'] ?? '';
+      String timeStr = '';
+      if (requestedAt.isNotEmpty) {
+        try {
+          final dt     = DateTime.parse(requestedAt).toLocal();
+          final h      = dt.hour > 12 ? dt.hour - 12 : dt.hour == 0 ? 12 : dt.hour;
+          final m      = dt.minute.toString().padLeft(2, '0');
+          final period = dt.hour >= 12 ? 'PM' : 'AM';
+          timeStr = '$h:$m $period';
+        } catch (_) { timeStr = requestedAt; }
+      }
+
+      return _LabRequest(
+        visitId:     item['visit_id']       ?? 0,
+        requestId:   'LR-${item['lab_request_id'] ?? '?'}',
+        patientName: item['patient_name']   ?? 'Unknown',
+        patientId:   item['reg_no']         ?? '',
+        doctorName:  'Doctor',
+        requestedAt: timeStr,
+        status:      _LabRequestStatus.pending,
+        tests:       tests,
+      );
+    }).toList();
+
+    if (!mounted) return;
     setState(() {
-      _pendingRequests.removeWhere((r) => r.requestId == requestId);
+      _pendingRequests = pending;
+      _isLoading       = false;
+    });
+  } catch (e) {
+    print('PENDING ERROR: $e');
+    if (!mounted) return;
+    setState(() {
+      _pendingRequests = [_mockFallbackRequest];
+      _isLoading       = false;
     });
   }
 
+  // ── PART 2: completed results — separate so failure doesn't affect pending ──
+  try {
+    final completed = await ApiService().getCompletedLabResults();
+    print('COMPLETED COUNT: ${completed.length}');
+
+    final completedList = completed.map<_CompletedRequest>((item) {
+      final resultText = item['result'] as String? ?? '';
+      final resultRows = resultText
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .map((line) {
+            final parts    = line.split(':');
+            final testName = parts.first.trim();
+            final value    = parts.length > 1 ? parts.sublist(1).join(':').trim() : '';
+            return _LabResult(
+              testName: testName,
+              value:    value,
+              flag:     value.toLowerCase().contains('positive') ? 'H' : null,
+            );
+          })
+          .toList();
+
+      final uploadedAt = item['uploaded_at'] ?? '';
+      String timeStr = '';
+      if (uploadedAt.isNotEmpty) {
+        try {
+          final dt     = DateTime.parse(uploadedAt).toLocal();
+          final h      = dt.hour > 12 ? dt.hour - 12 : dt.hour == 0 ? 12 : dt.hour;
+          final m      = dt.minute.toString().padLeft(2, '0');
+          final period = dt.hour >= 12 ? 'PM' : 'AM';
+          timeStr      = '$h:$m $period';
+        } catch (_) { timeStr = uploadedAt; }
+      }
+
+      return _CompletedRequest(
+        requestId:   'LR-${item['lab_request_id'] ?? '?'}',
+        patientName: item['patient_name'] ?? 'Unknown',
+        patientId:   item['reg_no']       ?? '',
+        techName:    item['tech_name']    ?? 'Lab Tech',
+        completedAt: timeStr,
+        results:     resultRows,
+        notified:    true,
+      );
+    }).toList();
+
+    if (!mounted) return;
+    setState(() => _completedRequests = completedList);
+  } catch (e) {
+    print('COMPLETED ERROR: $e');
+  }
+}
+
+  void _onUploaded(int visitId) {
+  // find the request before removing
+  final uploaded = _pendingRequests.firstWhere((r) => r.visitId == visitId);
+  setState(() {
+    _pendingRequests.removeWhere((r) => r.visitId == visitId);
+    // add to completed locally
+    _completedRequests.insert(0, _CompletedRequest(
+      requestId:   uploaded.requestId,
+      patientName: uploaded.patientName,
+      patientId:   uploaded.patientId,
+      techName:    ApiService.currentUsername ?? 'Lab Tech',
+      completedAt: _formatTime(DateTime.now()),
+      results:     [], // results text was sent to backend, not stored locally
+      notified:    true,
+    ));
+  });
+}
+
+String _formatTime(DateTime dt) {
+  final h      = dt.hour > 12 ? dt.hour - 12 : dt.hour == 0 ? 12 : dt.hour;
+  final m      = dt.minute.toString().padLeft(2, '0');
+  final period = dt.hour >= 12 ? 'PM' : 'AM';
+  return '$h:$m $period';
+}
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
     return Column(
       children: [
         _SubTabBar(
-          tabIndex: _tabIndex,
-          pendingCount: _pendingRequests.length,
-          completedCount: _mockCompletedRequests.length,
-          onTabChanged: (i) => setState(() => _tabIndex = i),
+          tabIndex:       _tabIndex,
+          pendingCount:   _pendingRequests.length,
+          completedCount: _completedRequests.length,
+          onTabChanged:   (i) => setState(() => _tabIndex = i),
         ),
         Expanded(
           child: IndexedStack(
             index: _tabIndex,
             children: [
               _PendingTab(requests: _pendingRequests, onUploaded: _onUploaded),
-              _CompletedTab(requests: _mockCompletedRequests),
+              _CompletedTab(requests: _completedRequests),
             ],
           ),
         ),
@@ -283,9 +301,9 @@ class _LabTechScreenState extends State<LabTechScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // SUB-TAB BAR
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 class _SubTabBar extends StatelessWidget {
   final int tabIndex;
@@ -304,25 +322,17 @@ class _SubTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          top: BorderSide(color: AppColors.border),
+          top:    BorderSide(color: AppColors.border),
           bottom: BorderSide(color: AppColors.border),
         ),
       ),
       child: Row(
         children: [
-          _TabPill(
-            label: 'Pending ($pendingCount)',
-            active: tabIndex == 0,
-            onTap: () => onTabChanged(0),
-          ),
-          _TabPill(
-            label: 'Completed ($completedCount)',
-            active: tabIndex == 1,
-            onTap: () => onTabChanged(1),
-          ),
+          _TabPill(label: 'Pending ($pendingCount)',   active: tabIndex == 0, onTap: () => onTabChanged(0)),
+          _TabPill(label: 'Completed ($completedCount)', active: tabIndex == 1, onTap: () => onTabChanged(1)),
         ],
       ),
     );
@@ -334,11 +344,7 @@ class _TabPill extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
 
-  const _TabPill({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
+  const _TabPill({required this.label, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -347,33 +353,21 @@ class _TabPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: active ? AppColors.accent : Colors.transparent,
-              width: 2.5,
-            ),
-          ),
+          border: Border(bottom: BorderSide(color: active ? AppColors.accent : Colors.transparent, width: 2.5)),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: active ? AppColors.accent : AppColors.ink3,
-          ),
-        ),
+        child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: active ? AppColors.accent : AppColors.ink3)),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // PENDING TAB
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 class _PendingTab extends StatelessWidget {
   final List<_LabRequest> requests;
-  final ValueChanged<String> onUploaded;
+  final ValueChanged<int> onUploaded;
 
   const _PendingTab({required this.requests, required this.onUploaded});
 
@@ -384,25 +378,11 @@ class _PendingTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.check_circle_outline_rounded,
-              size: 48,
-              color: AppColors.ink3,
-            ),
+            Icon(Icons.check_circle_outline_rounded, size: 48, color: AppColors.ink3),
             const SizedBox(height: 12),
-            const Text(
-              'All caught up!',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
-            ),
+            const Text('All caught up!', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.ink)),
             const SizedBox(height: 4),
-            const Text(
-              'No pending lab requests.',
-              style: TextStyle(fontSize: 13, color: AppColors.ink3),
-            ),
+            const Text('No pending lab requests.', style: TextStyle(fontSize: 13, color: AppColors.ink3)),
           ],
         ),
       );
@@ -415,7 +395,7 @@ class _PendingTab extends StatelessWidget {
       itemBuilder: (context, index) {
         final req = requests[index];
         return _PendingCard(
-          request: req,
+          request:  req,
           onUpload: () => _showUploadSheet(context, req),
         );
       },
@@ -428,8 +408,8 @@ class _PendingTab extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _UploadSheet(
-        request: request,
-        onSubmitted: () => onUploaded(request.requestId),
+        request:     request,
+        onSubmitted: () => onUploaded(request.visitId),
       ),
     );
   }
@@ -443,7 +423,7 @@ class _PendingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUrgent = request.status == _LabRequestStatus.urgent;
+    final isUrgent    = request.status == _LabRequestStatus.urgent;
     final accentColor = isUrgent ? AppColors.err : AppColors.warn;
 
     return Container(
@@ -451,18 +431,11 @@ class _PendingCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border(left: BorderSide(color: accentColor, width: 3.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
             child: Row(
@@ -472,60 +445,30 @@ class _PendingCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        request.tests.map((t) => t.name).join(' + '),
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
-                        ),
-                      ),
+                      Text(request.tests.map((t) => t.name).join(' + '),
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink)),
                       const SizedBox(height: 3),
-                      Text(
-                        '${request.patientName} · ${request.doctorName} · ${request.requestedAt}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.ink3,
-                          fontFamily: 'DMMono',
-                        ),
-                      ),
+                      Text('${request.patientName} · ${request.requestedAt}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.ink3, fontFamily: 'DMMono')),
                       const SizedBox(height: 3),
-                      Text(
-                        request.patientId,
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          color: AppColors.ink3,
-                          fontFamily: 'DMMono',
-                        ),
-                      ),
+                      Text(request.patientId,
+                        style: const TextStyle(fontSize: 10.5, color: AppColors.ink3, fontFamily: 'DMMono')),
                     ],
                   ),
                 ),
                 const SizedBox(width: 10),
-                // ── Uses shared AppStatusChip ──
-                AppStatusChip(
-                  label: isUrgent ? 'Urgent' : 'Pending',
-                  status: isUrgent ? AppStatus.err : AppStatus.warn,
-                ),
+                AppStatusChip(label: isUrgent ? 'Urgent' : 'Pending', status: isUrgent ? AppStatus.err : AppStatus.warn),
               ],
             ),
           ),
-
-          Divider(height: 1, color: AppColors.border),
-
-          // Test chips
+          const Divider(height: 1, color: AppColors.border),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
             child: Wrap(
-              spacing: 7,
-              runSpacing: 7,
-              children: request.tests
-                  .map((t) => _TestChip(name: t.name))
-                  .toList(),
+              spacing: 7, runSpacing: 7,
+              children: request.tests.map((t) => _TestChip(name: t.name)).toList(),
             ),
           ),
-
-          // Upload button
           Padding(
             padding: const EdgeInsets.all(14),
             child: SizedBox(
@@ -538,13 +481,8 @@ class _PendingCard extends StatelessWidget {
                   backgroundColor: AppColors.accent,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  textStyle: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  textStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
               ),
@@ -556,17 +494,31 @@ class _PendingCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // COMPLETED TAB
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 class _CompletedTab extends StatelessWidget {
   final List<_CompletedRequest> requests;
-
   const _CompletedTab({required this.requests});
 
   @override
   Widget build(BuildContext context) {
+    if (requests.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.history_rounded, size: 48, color: AppColors.ink3.withValues(alpha: 0.4)),
+            const SizedBox(height: 12),
+            const Text('No completed results yet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.ink3)),
+            const SizedBox(height: 4),
+            const Text('Completed lab results will appear here.', style: TextStyle(fontSize: 12, color: AppColors.ink3)),
+          ],
+        ),
+      );
+    }
+
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
       itemCount: requests.length,
@@ -578,7 +530,6 @@ class _CompletedTab extends StatelessWidget {
 
 class _CompletedCard extends StatefulWidget {
   final _CompletedRequest request;
-
   const _CompletedCard({required this.request});
 
   @override
@@ -594,17 +545,10 @@ class _CompletedCardState extends State<_CompletedCard> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 1))],
       ),
       child: Column(
         children: [
-          // Header row
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             borderRadius: BorderRadius.circular(14),
@@ -617,77 +561,38 @@ class _CompletedCardState extends State<_CompletedCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.request.patientName,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink,
-                          ),
-                        ),
+                        Text(widget.request.patientName, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.ink)),
                         const SizedBox(height: 3),
-                        Text(
-                          '${widget.request.patientId} · ${widget.request.requestId}',
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            color: AppColors.ink3,
-                            fontFamily: 'DMMono',
-                          ),
-                        ),
+                        Text('${widget.request.patientId} · ${widget.request.requestId}', style: const TextStyle(fontSize: 10.5, color: AppColors.ink3, fontFamily: 'DMMono')),
                         const SizedBox(height: 3),
-                        Text(
-                          '${widget.request.techName} · ${widget.request.completedAt}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.ink3,
-                          ),
-                        ),
+                        Text('${widget.request.techName} · ${widget.request.completedAt}', style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
                       ],
                     ),
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      // ── Uses shared AppStatusChip ──
                       const AppStatusChip(label: 'Done', status: AppStatus.ok),
                       const SizedBox(height: 6),
-                      Icon(
-                        _expanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: AppColors.ink3,
-                        size: 18,
-                      ),
+                      Icon(_expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: AppColors.ink3, size: 18),
                     ],
                   ),
                 ],
               ),
             ),
           ),
-
-          // Expandable results table
           if (_expanded) ...[
-            Divider(height: 1, color: AppColors.border),
+            const Divider(height: 1, color: AppColors.border),
             _ResultsTable(results: widget.request.results),
             if (widget.request.notified)
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      size: 14,
-                      color: AppColors.ok,
-                    ),
+                    const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.ok),
                     const SizedBox(width: 5),
-                    Text(
-                      'Doctor and patient notified · ${widget.request.completedAt}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ok,
-                      ),
-                    ),
+                    Text('Doctor and patient notified · ${widget.request.completedAt}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.ok)),
                   ],
                 ),
               ),
@@ -698,11 +603,10 @@ class _CompletedCardState extends State<_CompletedCard> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // UPLOAD SHEET
-// Backend: POST /api/v1/lab-results/upload
-// Payload: { lab_request_id, results: [{test_name, value, notes}] }
-// ─────────────────────────────────────────────────────────────────────────────
+// API: POST /api/consultation/lab-result/
+// ─────────────────────────────────────────────
 
 class _UploadSheet extends StatefulWidget {
   final _LabRequest request;
@@ -717,76 +621,85 @@ class _UploadSheet extends StatefulWidget {
 class _UploadSheetState extends State<_UploadSheet> {
   late Map<String, TextEditingController> _controllers;
   late Map<String, bool?> _boolValues;
-
   final _notesController = TextEditingController();
   bool _isSubmitting = false;
 
-  // Tests that use Positive/Negative toggle instead of text input
-  // Backend: could be driven by lab_test.input_type field
-  static const _boolTestNames = {
-    'Malaria RDT',
-    'Typhoid (Widal Test)',
-    'Urinalysis',
-    'Urine Culture',
-  };
+  // ── dynamic check using inputType from model ──
+  bool _isBoolTest(_LabTest test) => test.inputType == 'BOOLEAN';
 
   @override
   void initState() {
     super.initState();
     _controllers = {
       for (final t in widget.request.tests)
-        if (!_boolTestNames.contains(t.name)) t.name: TextEditingController(),
+        if (!_isBoolTest(t)) t.name: TextEditingController(),
     };
     _boolValues = {
       for (final t in widget.request.tests)
-        if (_boolTestNames.contains(t.name)) t.name: null,
+        if (_isBoolTest(t)) t.name: null,
     };
   }
 
   @override
   void dispose() {
-    for (final c in _controllers.values) {
-      c.dispose();
-    }
+    for (final c in _controllers.values) c.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
   bool get _isValid {
-    for (final entry in _boolValues.entries) {
-      if (entry.value == null) return false;
-    }
-    for (final c in _controllers.values) {
-      if (c.text.trim().isEmpty) return false;
-    }
+    for (final v in _boolValues.values)  { if (v == null)             return false; }
+    for (final c in _controllers.values) { if (c.text.trim().isEmpty) return false; }
     return true;
   }
 
+  // ── build result string from all inputs ──
+  String _buildResultString() {
+    final parts = <String>[];
+    for (final t in widget.request.tests) {
+      if (_isBoolTest(t)) {
+        final val = _boolValues[t.name] == true ? 'Positive' : 'Negative';
+        parts.add('${t.name}: $val');
+      } else {
+        parts.add('${t.name}: ${_controllers[t.name]?.text.trim() ?? ''}');
+      }
+    }
+    if (_notesController.text.trim().isNotEmpty) {
+      parts.add('Notes: ${_notesController.text.trim()}');
+    }
+    return parts.join('\n');
+  }
+
+  // ── POST /api/consultation/lab-result/ ──
   Future<void> _submit() async {
     if (!_isValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Please fill in all test results before submitting.',
-          ),
-          backgroundColor: AppColors.ink,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Please fill in all test results before submitting.'),
+        backgroundColor: AppColors.ink,
+      ));
       return;
     }
-
     setState(() => _isSubmitting = true);
-
-    // Backend: POST /api/v1/lab-results/upload
-    await Future.delayed(const Duration(milliseconds: 1200));
-
-    if (mounted) {
+    try {
+      await ApiService().uploadLabResult(
+        visitId:    widget.request.visitId,
+        labStaffId: ApiService.currentStaffId ?? '',
+        result:     _buildResultString(),
+      );
+      if (!mounted) return;
       Navigator.pop(context);
       widget.onSubmitted();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Results uploaded. Doctor notified.'),
+        backgroundColor: AppColors.ok,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed: ${e.toString()}'),
+        backgroundColor: AppColors.err,
+      ));
     }
   }
 
@@ -805,50 +718,25 @@ class _UploadSheetState extends State<_UploadSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 18),
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            // Title block
-            const Text(
-              'Upload Results',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
-              ),
-            ),
+            Center(child: Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 18),
+              width: 38, height: 4,
+              decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+            )),
+            const Text('Upload Results', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink)),
             const SizedBox(height: 3),
-            Text(
-              '${widget.request.tests.map((t) => t.name).join(' + ')} · ${widget.request.patientName}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.ink3,
-                height: 1.5,
-              ),
-            ),
+            Text('${widget.request.tests.map((t) => t.name).join(' + ')} · ${widget.request.patientName}',
+              style: const TextStyle(fontSize: 12, color: AppColors.ink3, height: 1.5)),
             const SizedBox(height: 6),
-            Text(
-              'Requested by ${widget.request.doctorName} · ${widget.request.requestedAt}',
-              style: const TextStyle(fontSize: 11.5, color: AppColors.ink3),
-            ),
-
+            Text('Requested at ${widget.request.requestedAt}',
+              style: const TextStyle(fontSize: 11.5, color: AppColors.ink3)),
             const SizedBox(height: 20),
-            Divider(height: 1, color: AppColors.border),
+            const Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 20),
 
-            // Test input fields
+            // ── dynamic test fields based on inputType ──
             ...widget.request.tests.map((test) {
-              if (_boolTestNames.contains(test.name)) {
+              if (_isBoolTest(test)) {
                 return _BoolTestField(
                   testName: test.name,
                   value: _boolValues[test.name],
@@ -861,7 +749,6 @@ class _UploadSheetState extends State<_UploadSheet> {
               );
             }),
 
-            // Notes
             const SizedBox(height: 4),
             _FieldLabel(label: 'Additional Observations'),
             const SizedBox(height: 6),
@@ -871,76 +758,35 @@ class _UploadSheetState extends State<_UploadSheet> {
               style: const TextStyle(fontSize: 13, color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: 'Any additional observations or flags...',
-                hintStyle: const TextStyle(
-                  color: AppColors.ink3,
-                  fontSize: 12.5,
-                ),
-                filled: true,
-                fillColor: AppColors.bg,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 11,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: const BorderSide(
-                    color: AppColors.accent,
-                    width: 1.5,
-                  ),
-                ),
+                hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 12.5),
+                filled: true, fillColor: AppColors.bg,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+                border:        OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: BorderSide(color: AppColors.border)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
               ),
             ),
-
             const SizedBox(height: 22),
-
-            // Submit CTA
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isSubmitting ? null : _submit,
                 icon: _isSubmitting
-                    ? const SizedBox(
-                        width: 17,
-                        height: 17,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
+                    ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.check_rounded, size: 19),
-                label: Text(
-                  _isSubmitting ? 'Submitting…' : 'Submit & Notify Doctor',
-                ),
+                label: Text(_isSubmitting ? 'Submitting…' : 'Submit & Notify Doctor'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,
-                  disabledBackgroundColor: AppColors.accent.withValues(
-                    alpha: 0.6,
-                  ),
+                  disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.6),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  textStyle: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
-                  ),
+                  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
                   elevation: 0,
                 ),
               ),
             ),
-
             const SizedBox(height: 10),
-
-            // Cancel
             SizedBox(
               width: double.infinity,
               child: TextButton(
@@ -948,15 +794,9 @@ class _UploadSheetState extends State<_UploadSheet> {
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.ink3,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9),
-                    side: BorderSide(color: AppColors.border),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9), side: BorderSide(color: AppColors.border)),
                 ),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
+                child: const Text('Cancel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -966,39 +806,26 @@ class _UploadSheetState extends State<_UploadSheet> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LOCAL WIDGETS (upload sheet only — not candidates for shared/widgets.dart)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// LOCAL WIDGETS
+// ─────────────────────────────────────────────
 
 class _TestChip extends StatelessWidget {
   final String name;
-
   const _TestChip({required this.name});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        name,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppColors.ink2,
-        ),
-      ),
+      decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(50), border: Border.all(color: AppColors.border)),
+      child: Text(name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink2)),
     );
   }
 }
 
 class _ResultsTable extends StatelessWidget {
   final List<_LabResult> results;
-
   const _ResultsTable({required this.results});
 
   @override
@@ -1006,86 +833,34 @@ class _ResultsTable extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.bg,
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: AppColors.border),
-        ),
+        decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(9), border: Border.all(color: AppColors.border)),
         child: Column(
           children: [
-            // Table header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: const [
+              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
+              child: const Row(
+                children: [
                   Expanded(flex: 3, child: _TableHeaderCell('Test')),
                   Expanded(flex: 2, child: _TableHeaderCell('Result')),
                   Expanded(flex: 2, child: _TableHeaderCell('Ref')),
                 ],
               ),
             ),
-            // Rows
             ...results.asMap().entries.map((entry) {
-              final i = entry.key;
-              final r = entry.value;
+              final i      = entry.key;
+              final r      = entry.value;
               final isLast = i == results.length - 1;
-
-              final resultColor = r.flag == 'H'
-                  ? AppColors.err
-                  : r.flag == 'L'
-                  ? AppColors.warn
-                  : AppColors.ink;
-
+              final resultColor = r.flag == 'H' ? AppColors.err : r.flag == 'L' ? AppColors.warn : AppColors.ink;
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 7,
-                ),
-                decoration: isLast
-                    ? null
-                    : BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: AppColors.border),
-                        ),
-                      ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: isLast ? null : const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
                 child: Row(
                   children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        r.testName,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        r.unit != null ? '${r.value} ${r.unit}' : r.value,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: resultColor,
-                          fontFamily: 'DMMono',
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        r.referenceRange ?? '—',
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          color: AppColors.ink3,
-                          fontFamily: 'DMMono',
-                        ),
-                      ),
-                    ),
+                    Expanded(flex: 3, child: Text(r.testName, style: const TextStyle(fontSize: 12, color: AppColors.ink))),
+                    Expanded(flex: 2, child: Text(r.unit != null ? '${r.value} ${r.unit}' : r.value,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: resultColor, fontFamily: 'DMMono'))),
+                    Expanded(flex: 2, child: Text(r.referenceRange ?? '—', style: const TextStyle(fontSize: 10.5, color: AppColors.ink3, fontFamily: 'DMMono'))),
                   ],
                 ),
               );
@@ -1103,41 +878,23 @@ class _TableHeaderCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 9.5,
-        fontWeight: FontWeight.w700,
-        color: AppColors.ink3,
-        letterSpacing: 0.5,
-      ),
-    );
+    return Text(text.toUpperCase(), style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColors.ink3, letterSpacing: 0.5));
   }
 }
 
 class _FieldLabel extends StatelessWidget {
   final String label;
-
   const _FieldLabel({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 10.5,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.7,
-        color: AppColors.ink3,
-      ),
-    );
+    return Text(label.toUpperCase(), style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.7, color: AppColors.ink3));
   }
 }
 
 class _TextTestField extends StatelessWidget {
   final _LabTest test;
   final TextEditingController controller;
-
   const _TextTestField({required this.test, required this.controller});
 
   @override
@@ -1150,42 +907,26 @@ class _TextTestField extends StatelessWidget {
           _FieldLabel(label: test.name),
           if (test.referenceRange != null) ...[
             const SizedBox(height: 2),
-            Text(
-              'Reference: ${test.referenceRange}${test.unit != null ? ' ${test.unit}' : ''}',
-              style: const TextStyle(fontSize: 10, color: AppColors.ink3),
-            ),
+            Text('Reference: ${test.referenceRange}${test.unit != null ? ' ${test.unit}' : ''}',
+              style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
           ],
           const SizedBox(height: 6),
           TextField(
             controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: test.inputType == 'NUMBER'
+                ? const TextInputType.numberWithOptions(decimal: true)
+                : TextInputType.text,
             style: const TextStyle(fontSize: 13, color: AppColors.ink),
             decoration: InputDecoration(
-              hintText: test.placeholder,
-              hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 12.5),
-              suffixText: test.unit,
+              hintText:    test.inputType == 'NUMBER' ? 'Enter value' : 'Enter result',
+              suffixText:  test.unit,
               suffixStyle: const TextStyle(color: AppColors.ink3, fontSize: 12),
-              filled: true,
-              fillColor: AppColors.bg,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 13,
-                vertical: 11,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(9),
-                borderSide: BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(9),
-                borderSide: const BorderSide(
-                  color: AppColors.accent,
-                  width: 1.5,
-                ),
-              ),
+              hintStyle:   const TextStyle(color: AppColors.ink3, fontSize: 12.5),
+              filled: true, fillColor: AppColors.bg,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+              border:        OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
             ),
           ),
         ],
@@ -1199,11 +940,7 @@ class _BoolTestField extends StatelessWidget {
   final bool? value;
   final ValueChanged<bool> onChanged;
 
-  const _BoolTestField({
-    required this.testName,
-    required this.value,
-    required this.onChanged,
-  });
+  const _BoolTestField({required this.testName, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -1216,23 +953,9 @@ class _BoolTestField extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                child: _BoolOption(
-                  label: 'Negative',
-                  selected: value == false,
-                  isPositive: false,
-                  onTap: () => onChanged(false),
-                ),
-              ),
+              Expanded(child: _BoolOption(label: 'Negative', selected: value == false, isPositive: false, onTap: () => onChanged(false))),
               const SizedBox(width: 8),
-              Expanded(
-                child: _BoolOption(
-                  label: 'Positive',
-                  selected: value == true,
-                  isPositive: true,
-                  onTap: () => onChanged(true),
-                ),
-              ),
+              Expanded(child: _BoolOption(label: 'Positive', selected: value == true,  isPositive: true,  onTap: () => onChanged(true))),
             ],
           ),
         ],
@@ -1247,17 +970,12 @@ class _BoolOption extends StatelessWidget {
   final bool isPositive;
   final VoidCallback onTap;
 
-  const _BoolOption({
-    required this.label,
-    required this.selected,
-    required this.isPositive,
-    required this.onTap,
-  });
+  const _BoolOption({required this.label, required this.selected, required this.isPositive, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = isPositive ? AppColors.err : AppColors.ok;
-    final activeBg = isPositive ? AppColors.errBg : AppColors.okBg;
+    final activeColor  = isPositive ? AppColors.err : AppColors.ok;
+    final activeBg     = isPositive ? AppColors.errBg : AppColors.okBg;
     final activeBorder = isPositive ? AppColors.errBorder : AppColors.okBorder;
 
     return GestureDetector(
@@ -1268,21 +986,9 @@ class _BoolOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? activeBg : AppColors.bg,
           borderRadius: BorderRadius.circular(50),
-          border: Border.all(
-            color: selected ? activeBorder : AppColors.border,
-            width: selected ? 1.5 : 1,
-          ),
+          border: Border.all(color: selected ? activeBorder : AppColors.border, width: selected ? 1.5 : 1),
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: selected ? activeColor : AppColors.ink2,
-            ),
-          ),
-        ),
+        child: Center(child: Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: selected ? activeColor : AppColors.ink2))),
       ),
     );
   }

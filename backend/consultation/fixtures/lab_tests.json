@@ -1,0 +1,15 @@
+[
+  {"model": "consultation.labtest", "pk": 1,  "fields": {"name": "Malaria RDT",     "unit": null,        "reference_range": null,           "input_type": "BOOLEAN", "is_active": true}},
+  {"model": "consultation.labtest", "pk": 2,  "fields": {"name": "Typhoid (Widal)", "unit": null,        "reference_range": null,           "input_type": "BOOLEAN", "is_active": true}},
+  {"model": "consultation.labtest", "pk": 3,  "fields": {"name": "Urine R/E",       "unit": null,        "reference_range": null,           "input_type": "BOOLEAN", "is_active": true}},
+  {"model": "consultation.labtest", "pk": 4,  "fields": {"name": "Urine Culture",   "unit": null,        "reference_range": null,           "input_type": "BOOLEAN", "is_active": true}},
+  {"model": "consultation.labtest", "pk": 5,  "fields": {"name": "FBC",             "unit": "cells/μL",  "reference_range": "4000–11000",   "input_type": "NUMBER",  "is_active": true}},
+  {"model": "consultation.labtest", "pk": 6,  "fields": {"name": "Haemoglobin",     "unit": "g/dL",      "reference_range": "12–16",        "input_type": "NUMBER",  "is_active": true}},
+  {"model": "consultation.labtest", "pk": 7,  "fields": {"name": "Blood Glucose",   "unit": "mmol/L",    "reference_range": "3.9–5.5",      "input_type": "NUMBER",  "is_active": true}},
+  {"model": "consultation.labtest", "pk": 8,  "fields": {"name": "Creatinine",      "unit": "mg/dL",     "reference_range": "0.6–1.2",      "input_type": "NUMBER",  "is_active": true}},
+  {"model": "consultation.labtest", "pk": 9,  "fields": {"name": "Liver Function",  "unit": "U/L",       "reference_range": "7–56",         "input_type": "NUMBER",  "is_active": true}},
+  {"model": "consultation.labtest", "pk": 10, "fields": {"name": "Troponin I",      "unit": "ng/mL",     "reference_range": "< 0.04",       "input_type": "NUMBER",  "is_active": true}},
+  {"model": "consultation.labtest", "pk": 11, "fields": {"name": "Platelet Count",  "unit": "/μL",       "reference_range": "150000–400000","input_type": "NUMBER",  "is_active": true}},
+  {"model": "consultation.labtest", "pk": 12, "fields": {"name": "ECG Reading",     "unit": null,        "reference_range": null,           "input_type": "TEXT",    "is_active": true}},
+  {"model": "consultation.labtest", "pk": 13, "fields": {"name": "Stool R/E",       "unit": null,        "reference_range": null,           "input_type": "TEXT",    "is_active": true}}
+]

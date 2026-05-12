@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../shared/widgets.dart';
+import '../services/api_service.dart';
 import 'symptom_submission_sheet.dart';
 import 'queue_submission_screen.dart';
 import 'notifications_screen.dart';
@@ -62,8 +63,8 @@ class HomeData {
 // TODO: replace with GET /api/v1/queue/stats?patient_id={id}
 const _mockHomeData = HomeData(
   userName: 'Khalid Gurashi',
-  queuePosition: 7,
-  estimatedWaitMinutes: 13,
+  queuePosition: 0,
+  estimatedWaitMinutes: 0,
   isDoctorAvailable: false,
   hasNewNotifications: false,
   healthAdvisoryTitle: 'Rainy Season Health Advisory',
@@ -124,6 +125,53 @@ class _HomeScreenState extends State<HomeScreen> {
   // TODO: derive from GET /api/v1/queue/stats?patient_id={id}
   int get _queuePosition => _data.queuePosition;
   int get _estimatedWait => _data.estimatedWaitMinutes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHomeData();
+  }
+
+  // ── load real data from backend ──
+  // only shows queue position if patient has actually checked in (currentVisitId != null)
+  // falls back to mock data if API fails or user not yet in queue
+  Future<void> _loadHomeData() async {
+    try {
+      await ApiService().getQueue();
+      if (!mounted) return;
+      setState(() {
+        _data = HomeData(
+          userName:             ApiService.currentUsername ?? _mockHomeData.userName,
+          // only show real queue position after patient has checked in
+          queuePosition:        ApiService.currentVisitId != null
+                                  ? (ApiService.currentQueuePosition ?? 0)
+                                  : 0,
+          estimatedWaitMinutes: ApiService.currentVisitId != null
+                                  ? ((ApiService.currentQueuePosition ?? 0) * 8)
+                                  : 0,
+          isDoctorAvailable:    true,
+          hasNewNotifications:  false,
+          healthAdvisoryTitle:  _mockHomeData.healthAdvisoryTitle,
+        );
+        // show active queue CTA only if patient has checked in
+        if (ApiService.currentVisitId != null) {
+          _isPatientInQueue = true;
+        }
+      });
+    } catch (e) {
+      // keep mock data if API fails — silent fallback
+      setState(() {
+        _data = HomeData(
+          userName:             ApiService.currentUsername ?? _mockHomeData.userName,
+          queuePosition:        0,
+          estimatedWaitMinutes: 0,
+          isDoctorAvailable:    false,
+          hasNewNotifications:  false,
+          healthAdvisoryTitle:  _mockHomeData.healthAdvisoryTitle,
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -249,8 +297,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 : _CheckInCta(
                     onTap: () => showSymptomSubmissionSheet(
                       context,
-                      onSubmitted: (_) =>
-                          setState(() => _isPatientInQueue = true),
+                      onSubmitted: (_) {
+                        setState(() => _isPatientInQueue = true);
+                        _loadHomeData(); // refresh queue position after check-in
+                      },
                     ),
                   ),
           ),
@@ -408,7 +458,9 @@ class _HeroHeader extends StatelessWidget {
               Expanded(
                 child: _HStatCard(
                   label: 'Est. Time',
-                  value: '~${data.estimatedWaitMinutes}m',
+                  value: data.estimatedWaitMinutes == 0
+                      ? '—'
+                      : '~${data.estimatedWaitMinutes}m',
                   sub: 'before your turn',
                   color: AppColors.heroStatAmber,
                 ),
