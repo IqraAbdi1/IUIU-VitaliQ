@@ -27,6 +27,28 @@ class PrescriptionReminder {
   });
 }
 
+/// Active treatment plan for the patient.
+/// Backend: GET /api/v1/treatment-plans?patient_id={id}
+class PatientTreatmentPlan {
+  final String planId;
+  final String treatment;
+  final String interval;
+  final int totalDoses;
+  final int dosesGiven;
+  final String nextDoseTime;
+
+  const PatientTreatmentPlan({
+    required this.planId,
+    required this.treatment,
+    required this.interval,
+    required this.totalDoses,
+    required this.dosesGiven,
+    required this.nextDoseTime,
+  });
+
+  bool get isComplete => dosesGiven >= totalDoses;
+}
+
 /// A medicine's current stock availability shown on the home screen.
 /// Backend: GET /api/v1/medicines
 class MedicineAvailability {
@@ -96,6 +118,17 @@ final List<PrescriptionReminder> _mockReminders = [
   ),
 ];
 
+// TODO: replace with GET /api/v1/treatment-plans?patient_id={id}
+const PatientTreatmentPlan? _mockTreatmentPlan = PatientTreatmentPlan(
+  planId: 'TP-001',
+  treatment: 'IV Drip — Normal Saline',
+  interval: 'Every 8 hours',
+  totalDoses: 6,
+  dosesGiven: 2,
+  nextDoseTime: '2:00 PM',
+);
+// set to null to simulate no active plan
+
 // TODO: replace with GET /api/v1/medicines
 const List<MedicineAvailability> _mockMedicines = [
   MedicineAvailability(name: 'Paracetamol 500mg', status: AppStatus.ok),
@@ -103,6 +136,273 @@ const List<MedicineAvailability> _mockMedicines = [
   MedicineAvailability(name: 'Cetirizine 10mg', status: AppStatus.ok),
   MedicineAvailability(name: 'Ibuprofen 400mg', status: AppStatus.err),
 ];
+
+// =============================================================================
+// Widgets
+// =============================================================================
+
+class _QuickAccessRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String status;
+  final bool active;
+  final VoidCallback? onTap;
+
+  const _QuickAccessRow({
+    required this.icon,
+    required this.label,
+    required this.status,
+    required this.active,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: active ? AppColors.accent : AppColors.ink3,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: active ? AppColors.ink : AppColors.ink3,
+                    ),
+                  ),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: active ? AppColors.accent : AppColors.ink3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: active ? AppColors.ink3 : AppColors.border,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TreatmentPlanSheet extends StatelessWidget {
+  final PatientTreatmentPlan plan;
+  const _TreatmentPlanSheet({required this.plan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Treatment Plan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.ink2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.border, height: 1),
+              const SizedBox(height: 16),
+              AppInfoBox(
+                label: plan.treatment,
+                body: '${plan.interval} · Next dose at ${plan.nextDoseTime}',
+                variant: AppInfoVariant.accent,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text(
+                    'Progress: ',
+                    style: TextStyle(fontSize: 12, color: AppColors.ink3),
+                  ),
+                  Text(
+                    '${plan.dosesGiven} of ${plan.totalDoses} doses',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: plan.dosesGiven / plan.totalDoses,
+                        minHeight: 6,
+                        backgroundColor: AppColors.border,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.accent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              AppInfoBox(
+                label: 'What to do',
+                body:
+                    'Arrive at the clinic at your scheduled dose time. The nurse will be notified when you check in.',
+                variant: AppInfoVariant.warn,
+              ),
+              const SizedBox(height: 16),
+              // Backend: POST /api/v1/treatment-plans/{planId}/arrived
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: POST /api/v1/treatment-plans/{planId}/arrived
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Nurse notified of your arrival.'),
+                      backgroundColor: AppColors.ok,
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Text(
+                    "I've Arrived",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RemindersSheet extends StatelessWidget {
+  final List<PrescriptionReminder> reminders;
+  final void Function(int, bool) onToggle;
+
+  const _RemindersSheet({required this.reminders, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
+              child: Row(
+                children: [
+                  const Text(
+                    "Today's Reminders",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.ink2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ),
+            const Divider(color: AppColors.border, height: 1),
+            ...reminders.asMap().entries.map(
+              (entry) => _ReminderTile(
+                reminder: entry.value,
+                onToggle: (val) => onToggle(entry.key, val),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // =============================================================================
 // SCREEN
@@ -121,6 +421,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // TODO: load from GET /api/v1/prescriptions/active?patient_id={id}
   late List<PrescriptionReminder> _reminders = _mockReminders;
+
+  // Backend: GET /api/v1/treatment-plans?patient_id={id}
+  final PatientTreatmentPlan? _activePlan = _mockTreatmentPlan;
 
   // TODO: load from GET /api/v1/medicines
   final List<MedicineAvailability> _medicines = _mockMedicines;
@@ -208,38 +511,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-              // ── TODAY'S REMINDERS ────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: "Today's Reminders"),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Card(
-                    color: AppColors.surface,
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: _reminders.asMap().entries.map((entry) {
-                        return _ReminderTile(
-                          reminder: entry.value,
-                          onToggle: (val) => setState(
-                            () => _reminders[entry.key].isDone = val,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
               // ── CLINIC UPDATES ───────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
@@ -267,22 +538,69 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-              // ── MEDICINE AVAILABILITY ────────────────────────────────────
+              // ── TREATMENT IN PROGRESS ────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: 'Medicine Availability'),
+                  child: AppSectionHeader(title: 'Treatment in Progress'),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                  child: _MedicineCard(medicines: _medicines),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        _QuickAccessRow(
+                          icon: Icons.vaccines_rounded,
+                          label: 'Treatment Plan',
+                          status:
+                              _activePlan != null && !_activePlan!.isComplete
+                              ? '${_activePlan!.dosesGiven}/${_activePlan!.totalDoses} doses · Next ${_activePlan!.nextDoseTime}'
+                              : 'No active plan',
+                          active:
+                              _activePlan != null && !_activePlan!.isComplete,
+                          onTap: _activePlan != null && !_activePlan!.isComplete
+                              ? () => showDialog(
+                                  context: context,
+                                  barrierColor: Colors.black54,
+                                  builder: (_) =>
+                                      _TreatmentPlanSheet(plan: _activePlan!),
+                                )
+                              : null,
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
+                        _QuickAccessRow(
+                          icon: Icons.medication_rounded,
+                          label: "Today's Reminders",
+                          status: _reminders.any((r) => !r.isDone)
+                              ? '${_reminders.where((r) => !r.isDone).length} pending'
+                              : 'All done',
+                          active: _reminders.any((r) => !r.isDone),
+                          onTap: _reminders.isNotEmpty
+                              ? () => showDialog(
+                                  context: context,
+                                  barrierColor: Colors.black54,
+                                  builder: (_) => _RemindersSheet(
+                                    reminders: _reminders,
+                                    onToggle: (i, val) => setState(
+                                      () => _reminders[i].isDone = val,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-
-              // Space so CTA doesn't cover last card
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),

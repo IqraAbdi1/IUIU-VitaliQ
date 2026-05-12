@@ -1875,12 +1875,27 @@ class _PrescribeSheetState extends State<_PrescribeSheet> {
   final _dosageController = TextEditingController();
   final _instructionsController = TextEditingController();
   bool _isSubmitting = false;
+  bool _createTreatmentPlan = false;
+  final _treatmentNameController = TextEditingController();
+  final _nurseInstructionsController = TextEditingController();
+  String _selectedInterval = 'Every 8 hours';
+  int _durationDays = 1;
+
+  static const _kIntervals = [
+    'Every 4 hours',
+    'Every 6 hours',
+    'Every 8 hours',
+    'Every 12 hours',
+    'Every 24 hours',
+  ];
 
   @override
   void dispose() {
     _medicineController.dispose();
     _dosageController.dispose();
     _instructionsController.dispose();
+    _treatmentNameController.dispose();
+    _nurseInstructionsController.dispose();
     super.dispose();
   }
 
@@ -2060,6 +2075,200 @@ class _PrescribeSheetState extends State<_PrescribeSheet> {
                           hint: 'e.g. Take with food. Complete full course.',
                           maxLines: 3,
                         ),
+
+                        const SizedBox(height: 20),
+                        const Divider(color: AppColors.border, height: 1),
+                        const SizedBox(height: 16),
+
+                        // ── Treatment Plan toggle ──
+                        GestureDetector(
+                          onTap: () => setState(
+                            () => _createTreatmentPlan = !_createTreatmentPlan,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Create Treatment Plan',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Schedule recurring doses with nurse assistance.',
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppColors.ink3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: _createTreatmentPlan,
+                                onChanged: (val) =>
+                                    setState(() => _createTreatmentPlan = val),
+                                activeColor: AppColors.accent,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // ── Treatment Plan fields (visible when toggled) ──
+                        if (_createTreatmentPlan) ...[
+                          const SizedBox(height: 16),
+                          _SheetInput(
+                            controller: _treatmentNameController,
+                            label: 'Treatment / Procedure',
+                            hint: 'e.g. IV Drip — Normal Saline',
+                          ),
+                          const SizedBox(height: 10),
+
+                          // ── Interval dropdown ──
+                          const _SheetLabel('Dose Interval'),
+                          const SizedBox(height: 6),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface2,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedInterval,
+                                isExpanded: true,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.ink,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                dropdownColor: AppColors.surface,
+                                items: _kIntervals
+                                    .map(
+                                      (i) => DropdownMenuItem(
+                                        value: i,
+                                        child: Text(i),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setState(() => _selectedInterval = val!),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // ── Duration stepper ──
+                          const _SheetLabel('Duration'),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface2,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                const Text(
+                                  'Number of days:',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.ink2,
+                                  ),
+                                ),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () => setState(
+                                    () => _durationDays = (_durationDays - 1)
+                                        .clamp(1, 14),
+                                  ),
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.remove_rounded,
+                                      size: 16,
+                                      color: AppColors.ink2,
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                  ),
+                                  child: Text(
+                                    '$_durationDays',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => setState(
+                                    () => _durationDays = (_durationDays + 1)
+                                        .clamp(1, 14),
+                                  ),
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.add_rounded,
+                                      size: 16,
+                                      color: AppColors.ink2,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _SheetInput(
+                            controller: _nurseInstructionsController,
+                            label: 'Nurse Instructions',
+                            hint:
+                                'e.g. Monitor BP before each dose. Use left arm.',
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: 6),
+                          AppInfoBox(
+                            label: 'Nurse will be notified',
+                            body:
+                                'A treatment plan will be created and assigned to the nurse station automatically.',
+                            variant: AppInfoVariant.accent,
+                          ),
+                        ],
+
                         const SizedBox(height: 22),
                         _PrimaryButton(
                           label: _isSubmitting
