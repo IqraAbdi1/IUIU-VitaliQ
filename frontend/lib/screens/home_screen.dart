@@ -606,10 +606,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // ── CTA (fixed at bottom) ────────────────────────────────────────
+          // ── CTA (fixed at bottom-right, never over image panel) ──
           Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
+            bottom: 24,
+            right: 24,
             child: _isPatientInQueue
                 ? _ActiveQueueCta(
                     onTap: () => Navigator.of(context).push(
@@ -1178,40 +1178,75 @@ class _MedicineCard extends StatelessWidget {
 
 // ── CTA Buttons ───────────────────────────────────────────────────────────────
 
-class _CheckInCta extends StatelessWidget {
+class _CheckInCta extends StatefulWidget {
   final VoidCallback onTap;
   const _CheckInCta({required this.onTap});
 
   @override
+  State<_CheckInCta> createState() => _CheckInCtaState();
+}
+
+class _CheckInCtaState extends State<_CheckInCta>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulse;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 1.08,
+    ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 17),
-        decoration: BoxDecoration(
-          color: AppColors.err,
-          borderRadius: BorderRadius.circular(50),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.err.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(Icons.sick_outlined, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text(
-              "Feeling sick? Check-in",
-              style: TextStyle(
+            // ── Outer pulse ring ──
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.err.withValues(alpha: 0.18),
+              ),
+            ),
+            // ── Main button ──
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.err.withValues(alpha: 0.92),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.err.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.sentiment_very_dissatisfied,
                 color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                letterSpacing: 0.1,
+                size: 24,
               ),
             ),
           ],
@@ -1229,36 +1264,38 @@ class _ActiveQueueCta extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 17),
-        decoration: BoxDecoration(
-          color: AppColors.ok,
-          borderRadius: BorderRadius.circular(50),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.ok.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 6),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.ok.withValues(alpha: 0.18),
             ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text(
-              "Check submission status",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                letterSpacing: 0.1,
-              ),
+          ),
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.ok.withValues(alpha: 0.92),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.ok.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-          ],
-        ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+        ],
       ),
     );
   }
