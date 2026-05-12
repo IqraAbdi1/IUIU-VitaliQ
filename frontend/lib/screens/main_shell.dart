@@ -6,19 +6,13 @@ import 'my_health_screen.dart';
 import 'prescriptions_screen.dart';
 import 'doctor_queue_screen.dart';
 import 'lab_tech_screen.dart';
-import 'pharmacy_screen.dart';
 import 'admin_screen.dart';
 import 'notifications_screen.dart';
+import 'nurse_screen.dart';
+import 'staff_home_screen.dart';
 
-// ---------------------------------------------------------------------------
-// Breakpoint
-// ---------------------------------------------------------------------------
 
 const _kDesktopBreakpoint = 600.0;
-
-// ---------------------------------------------------------------------------
-// Tab configuration
-// ---------------------------------------------------------------------------
 
 class _TabItem {
   final String label;
@@ -34,64 +28,7 @@ class _TabItem {
   });
 }
 
-const _patientTabs = [
-  _TabItem(
-    label: 'Home',
-    icon: Icons.home_rounded,
-    screen: HomeScreen(),
-    showTopBar: false,
-  ),
-  _TabItem(
-    label: 'My Health',
-    icon: Icons.monitor_heart_rounded,
-    screen: MyHealthScreen(),
-  ),
-  _TabItem(
-    label: 'Prescriptions',
-    icon: Icons.medication_rounded,
-    screen: PrescriptionsScreen(),
-  ),
-  _TabItem(
-    label: 'Lab',
-    icon: Icons.biotech_rounded,
-    screen: LabResultsScreen(),
-  ),
-];
-
-const _doctorTabs = [
-  _TabItem(
-    label: 'Queue',
-    icon: Icons.format_list_bulleted_rounded,
-    screen: DoctorQueueScreen(),
-  ),
-];
-
-const _labTabs = [
-  _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
-];
-
-const _pharmacyTabs = [
-  _TabItem(
-    label: 'Stock',
-    icon: Icons.inventory_2_rounded,
-    screen: PharmacyScreen(),
-  ),
-];
-
-const _adminTabs = [
-  _TabItem(
-    label: 'Analytics',
-    icon: Icons.bar_chart_rounded,
-    screen: AdminScreen(),
-  ),
-];
-
-// ---------------------------------------------------------------------------
-// Shell
-// ---------------------------------------------------------------------------
-
 class MainShell extends StatefulWidget {
-  // Backend: decoded from JWT claim 'role'
   final String role;
   const MainShell({super.key, this.role = 'patient'});
 
@@ -101,34 +38,120 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-  late final List<_TabItem> _tabs;
+  late List<_TabItem> _tabs; // ← removed final so it can be assigned in initState
 
   @override
   void initState() {
     super.initState();
+    // ── build tabs WITHOUT const so StaffHomeScreen.initState() fires ──
     switch (widget.role) {
       case 'doctor':
-        _tabs = _doctorTabs;
+        _tabs = [
+          _TabItem(
+            label: 'Home',
+            icon: Icons.home_rounded,
+            screen: StaffHomeScreen(role: 'doctor'),
+            showTopBar: false,
+          ),
+          _TabItem(
+            label: 'Queue',
+            icon: Icons.format_list_bulleted_rounded,
+            screen: DoctorQueueScreen(),
+          ),
+        ];
         break;
       case 'lab':
-        _tabs = _labTabs;
+        _tabs = [
+          _TabItem(
+            label: 'Home',
+            icon: Icons.home_rounded,
+            screen: StaffHomeScreen(role: 'lab'),
+            showTopBar: false,
+          ),
+          _TabItem(
+            label: 'Lab',
+            icon: Icons.biotech_rounded,
+            screen: LabTechScreen(),
+          ),
+        ];
         break;
-      case 'pharmacy':
-        _tabs = _pharmacyTabs;
+      case 'nurse':
+        _tabs = [
+          _TabItem(
+            label: 'Home',
+            icon: Icons.home_rounded,
+            screen: StaffHomeScreen(role: 'nurse'),
+            showTopBar: false,
+          ),
+          _TabItem(
+            label: 'Station',
+            icon: Icons.medical_services_rounded,
+            screen: NurseScreen(canDispense: true),
+          ),
+        ];
         break;
       case 'admin':
-        _tabs = _adminTabs;
+        _tabs = [
+          _TabItem(
+            label: 'Home',
+            icon: Icons.home_rounded,
+            screen: StaffHomeScreen(role: 'admin'),
+            showTopBar: false,
+          ),
+          _TabItem(
+            label: 'Overview',
+            icon: Icons.bar_chart_rounded,
+            screen: AdminScreen(),
+          ),
+        ];
         break;
-      default:
-        _tabs = _patientTabs;
+        default:
+        _tabs = [
+          _TabItem(
+            label: 'Home',
+            icon: Icons.home_rounded,
+            screen: HomeScreen(),
+            showTopBar: false,
+          ),
+          _TabItem(
+            label: 'My Health',
+            icon: Icons.monitor_heart_rounded,
+            screen: MyHealthScreen(),
+          ),
+          _TabItem(
+            label: 'Prescriptions',
+            icon: Icons.medication_rounded,
+            screen: PrescriptionsScreen(),
+          ),
+          _TabItem(
+            label: 'Lab',
+            icon: Icons.biotech_rounded,
+            screen: LabResultsScreen(),
+          ),
+        ];
     }
   }
 
   void _onTabTap(int i) => setState(() => _currentIndex = i);
 
   void _logout() {
-    // TODO: clear JWT token
     Navigator.of(context).pushReplacementNamed('/login');
+  }
+
+  void _openMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AppMenu(
+        role: widget.role,
+        onSwitchToPatient: () {
+          Navigator.pop(context);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainShell(role: 'patient')),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -146,6 +169,7 @@ class _MainShellState extends State<MainShell> {
             onBellTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
             ),
+            onMenuTap: _openMenu,
           )
         : _MobileLayout(
             tabs: _tabs,
@@ -153,13 +177,10 @@ class _MainShellState extends State<MainShell> {
             onTap: _onTabTap,
             tab: tab,
             onLogout: _logout,
+            onMenuTap: _openMenu,
           );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Mobile layout — bottom nav (unchanged behaviour)
-// ---------------------------------------------------------------------------
 
 class _MobileLayout extends StatelessWidget {
   final List<_TabItem> tabs;
@@ -167,6 +188,7 @@ class _MobileLayout extends StatelessWidget {
   final void Function(int) onTap;
   final _TabItem tab;
   final VoidCallback onLogout;
+  final VoidCallback onMenuTap;
 
   const _MobileLayout({
     required this.tabs,
@@ -174,6 +196,7 @@ class _MobileLayout extends StatelessWidget {
     required this.onTap,
     required this.tab,
     required this.onLogout,
+    required this.onMenuTap,
   });
 
   @override
@@ -192,14 +215,11 @@ class _MobileLayout extends StatelessWidget {
         tabs: tabs,
         currentIndex: currentIndex,
         onTap: onTap,
+        onMenuTap: onMenuTap,
       ),
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Desktop layout — left side rail + topbar + content
-// ---------------------------------------------------------------------------
 
 class _DesktopLayout extends StatelessWidget {
   final List<_TabItem> tabs;
@@ -208,6 +228,7 @@ class _DesktopLayout extends StatelessWidget {
   final _TabItem tab;
   final VoidCallback onLogout;
   final VoidCallback onBellTap;
+  final VoidCallback onMenuTap;
 
   const _DesktopLayout({
     required this.tabs,
@@ -216,6 +237,7 @@ class _DesktopLayout extends StatelessWidget {
     required this.tab,
     required this.onLogout,
     required this.onBellTap,
+    required this.onMenuTap,
   });
 
   @override
@@ -225,23 +247,15 @@ class _DesktopLayout extends StatelessWidget {
       body: SafeArea(
         child: Row(
           children: [
-            // ── Side rail ──────────────────────────────────
             _SideRail(
               tabs: tabs,
               currentIndex: currentIndex,
               onTap: onTap,
               onLogout: onLogout,
               onBellTap: onBellTap,
+              onMenuTap: onMenuTap,
             ),
-
-            // ── Vertical divider ───────────────────────────
-            const VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: AppColors.border,
-            ),
-
-            // ── Main content ───────────────────────────────
+            const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
             Expanded(
               child: Column(
                 children: [
@@ -257,16 +271,13 @@ class _DesktopLayout extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Side rail — desktop nav
-// ---------------------------------------------------------------------------
-
 class _SideRail extends StatelessWidget {
   final List<_TabItem> tabs;
   final int currentIndex;
   final void Function(int) onTap;
   final VoidCallback onLogout;
   final VoidCallback onBellTap;
+  final VoidCallback onMenuTap;
 
   const _SideRail({
     required this.tabs,
@@ -274,12 +285,13 @@ class _SideRail extends StatelessWidget {
     required this.onTap,
     required this.onLogout,
     required this.onBellTap,
+    required this.onMenuTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 72,
+      width: 76,
       color: AppColors.surface,
       child: Column(
         children: [
@@ -306,18 +318,9 @@ class _SideRail extends StatelessWidget {
           const Spacer(),
           const Divider(height: 1, thickness: 1, color: AppColors.border),
           const SizedBox(height: 8),
-          _RailItem(
-            icon: Icons.notifications_outlined,
-            label: 'Alerts',
-            isActive: false,
-            onTap: onBellTap,
-          ),
-          _RailItem(
-            icon: Icons.logout_rounded,
-            label: 'Logout',
-            isActive: false,
-            onTap: onLogout,
-          ),
+          _RailItem(icon: Icons.notifications_outlined, label: 'Alerts',  isActive: false, onTap: onBellTap),
+          _RailItem(icon: Icons.menu_rounded,           label: 'Menu',    isActive: false, onTap: onMenuTap),
+          _RailItem(icon: Icons.logout_rounded,         label: 'Logout',  isActive: false, onTap: onLogout),
           const SizedBox(height: 8),
         ],
       ),
@@ -359,11 +362,7 @@ class _RailItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 22,
-              color: isActive ? AppColors.accent : AppColors.ink3,
-            ),
+            Icon(icon, size: 22, color: isActive ? AppColors.accent : AppColors.ink3),
             const SizedBox(height: 4),
             Text(
               label,
@@ -379,10 +378,6 @@ class _RailItem extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Topbar
-// ---------------------------------------------------------------------------
 
 class _TopBar extends StatelessWidget {
   final String title;
@@ -403,21 +398,13 @@ class _TopBar extends StatelessWidget {
           if (onLogout != null)
             _IconBtn(
               onTap: onLogout!,
-              child: const Icon(
-                Icons.logout_rounded,
-                size: 20,
-                color: AppColors.ink2,
-              ),
+              child: const Icon(Icons.logout_rounded, size: 20, color: AppColors.ink2),
             ),
           Expanded(
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.ink),
             ),
           ),
           if (MediaQuery.of(context).size.width < 600)
@@ -428,24 +415,15 @@ class _TopBar extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(
-                    Icons.notifications_outlined,
-                    size: 22,
-                    color: AppColors.ink2,
-                  ),
+                  const Icon(Icons.notifications_outlined, size: 22, color: AppColors.ink2),
                   Positioned(
-                    top: -2,
-                    right: -2,
+                    top: -2, right: -2,
                     child: Container(
-                      width: 8,
-                      height: 8,
+                      width: 8, height: 8,
                       decoration: BoxDecoration(
                         color: AppColors.err,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.surface,
-                          width: 1.5,
-                        ),
+                        border: Border.all(color: AppColors.surface, width: 1.5),
                       ),
                     ),
                   ),
@@ -468,8 +446,7 @@ class _IconBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38,
-        height: 38,
+        width: 38, height: 38,
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(10),
@@ -480,19 +457,17 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Bottom nav (mobile only)
-// ---------------------------------------------------------------------------
-
 class _BottomNav extends StatelessWidget {
   final List<_TabItem> tabs;
   final int currentIndex;
   final void Function(int) onTap;
+  final VoidCallback onMenuTap;
 
   const _BottomNav({
     required this.tabs,
     required this.currentIndex,
     required this.onTap,
+    required this.onMenuTap,
   });
 
   @override
@@ -501,61 +476,137 @@ class _BottomNav extends StatelessWidget {
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 12,
-            offset: Offset(0, -2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -2))],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
           height: 60,
           child: Row(
-            children: List.generate(tabs.length, (i) {
-              final isActive = i == currentIndex;
-              final tab = tabs[i];
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onTap(i),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: isActive ? 22 : 0,
-                        height: 3,
-                        margin: const EdgeInsets.only(bottom: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(3),
+            children: [
+              ...List.generate(tabs.length, (i) {
+                final isActive = i == currentIndex;
+                final tab = tabs[i];
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => onTap(i),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: isActive ? 22 : 0,
+                          height: 3,
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(3)),
                           ),
                         ),
-                      ),
-                      Icon(
-                        tab.icon,
-                        size: 22,
-                        color: isActive ? AppColors.accent : AppColors.ink3,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        tab.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: isActive ? AppColors.accent : AppColors.ink3,
+                        Icon(tab.icon, size: 22, color: isActive ? AppColors.accent : AppColors.ink3),
+                        const SizedBox(height: 3),
+                        Text(
+                          tab.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isActive ? AppColors.accent : AppColors.ink3,
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              Expanded(
+                child: GestureDetector(
+                  onTap: onMenuTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 9),
+                      Icon(Icons.menu_rounded, size: 22, color: AppColors.ink3),
+                      SizedBox(height: 3),
+                      Text('Menu', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.ink3)),
                     ],
                   ),
                 ),
-              );
-            }),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppMenu extends StatelessWidget {
+  final String role;
+  final VoidCallback onSwitchToPatient;
+
+  const _AppMenu({required this.role, required this.onSwitchToPatient});
+
+  bool get _isStaff => role == 'doctor' || role == 'nurse' || role == 'lab' || role == 'admin';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 16),
+          _MenuItem(icon: Icons.person_outline_rounded, label: 'My Profile',     onTap: () => Navigator.pop(context)),
+          _MenuItem(icon: Icons.info_outline_rounded,   label: 'About VitalIQ',  onTap: () => Navigator.pop(context)),
+          _MenuItem(icon: Icons.help_outline_rounded,   label: 'Help & Support', onTap: () => Navigator.pop(context)),
+          if (_isStaff) ...[
+            const Divider(color: AppColors.border, height: 1),
+            _MenuItem(
+              icon: Icons.switch_account_rounded,
+              label: 'Switch to Patient View',
+              valueColor: AppColors.accent,
+              onTap: onSwitchToPatient,
+            ),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? valueColor;
+  final VoidCallback onTap;
+
+  const _MenuItem({required this.icon, required this.label, required this.onTap, this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = valueColor ?? AppColors.ink;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 14),
+            Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.ink3),
+          ],
         ),
       ),
     );
