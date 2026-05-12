@@ -1,0 +1,15 @@
+9cb1c03 (HEAD -> style/homepage-adjustments-for-web) refactor/minorfixex
+c7c0782 fix/minor-issues
+3fa2f9e (origin/style/homepage-adjustments-for-web) del/bloated-comments
+29b2454 Refactor/improved-image-slider-for-web
+c46c068 Refactor/category-row-is-now-compatible-with-webview
+ade1093 Style/removed-unnecessary-padding
+ff2683f Style/changed-SearchBar&Button-Color&Icon
+cf68dcc fix(header)/corrected-structure-format-for-different-devices
+d04969c Refactor/updated-ProductService-baseUrl-to-handle-Web
+602101b Merge branch 'Codes43:main' into main
+413aad5 improved on advert sliders and added some assets
+0ad807c IN this commit I Added Model for product, Product service to handle API and finally managed to Utlize our Products API
+c8ff44f home background change with some features
+e6db21b Advert functionality working perfectly
+eedcba6 (style/adjusting-categories-row-buttons-design) chore/updating-auto-generated-plugins
