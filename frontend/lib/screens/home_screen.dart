@@ -5,7 +5,7 @@ import 'symptom_submission_sheet.dart';
 import 'queue_submission_screen.dart';
 import 'notifications_screen.dart';
 import 'patient_profile_screen.dart';
-
+import 'dart:async';
 // =============================================================================
 // MODELS
 // =============================================================================
@@ -42,6 +42,8 @@ class HomeData {
   final int queuePosition;
   final int estimatedWaitMinutes;
   final bool isDoctorAvailable;
+  final String doctorName; // Backend: queue/stats.doctor_name
+  final String doctorSpecialty; // Backend: queue/stats.doctor_specialty
   final bool hasNewNotifications;
   final String healthAdvisoryTitle;
 
@@ -50,6 +52,8 @@ class HomeData {
     required this.queuePosition,
     required this.estimatedWaitMinutes,
     required this.isDoctorAvailable,
+    required this.doctorName,
+    required this.doctorSpecialty,
     required this.hasNewNotifications,
     required this.healthAdvisoryTitle,
   });
@@ -64,7 +68,9 @@ const _mockHomeData = HomeData(
   userName: 'Khalid Gurashi',
   queuePosition: 7,
   estimatedWaitMinutes: 13,
-  isDoctorAvailable: false,
+  isDoctorAvailable: true,
+  doctorName: 'Dr. Amina Hassan',
+  doctorSpecialty: 'General Practice',
   hasNewNotifications: false,
   healthAdvisoryTitle: 'Rainy Season Health Advisory',
 );
@@ -383,7 +389,11 @@ class _HeroHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _DoctorAvailabilityChip(isAvailable: data.isDoctorAvailable),
+              _DoctorAvailabilityChip(
+                isAvailable: data.isDoctorAvailable,
+                doctorName: data.doctorName,
+                doctorSpecialty: data.doctorSpecialty,
+              ),
               if (showBell)
                 _NotificationBell(
                   hasUpdate: data.hasNewNotifications,
@@ -482,31 +492,87 @@ class _HStatCard extends StatelessWidget {
 
 // ── Doctor Availability Chip ──────────────────────────────────────────────────
 
-class _DoctorAvailabilityChip extends StatelessWidget {
+// ── Doctor Availability Chip ──────────────────────────────────────────────────
+
+// Backend: GET /api/v1/queue/stats → doctor_name, doctor_specialty, is_available
+class _DoctorAvailabilityChip extends StatefulWidget {
   final bool isAvailable;
-  const _DoctorAvailabilityChip({required this.isAvailable});
+  final String doctorName;
+  final String doctorSpecialty;
+
+  const _DoctorAvailabilityChip({
+    required this.isAvailable,
+    required this.doctorName,
+    required this.doctorSpecialty,
+  });
+
+  @override
+  State<_DoctorAvailabilityChip> createState() =>
+      _DoctorAvailabilityChipState();
+}
+
+class _DoctorAvailabilityChipState extends State<_DoctorAvailabilityChip> {
+  int _textIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 2), (_) {
+      setState(() => _textIndex = (_textIndex + 1) % 3);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String get _currentText => switch (_textIndex) {
+    0 => widget.doctorName,
+    1 => widget.doctorSpecialty,
+    _ => widget.isAvailable ? 'Dr. Available' : 'Dr. On Break',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final color = isAvailable ? AppColors.ok : Colors.orange;
+    final color = widget.isAvailable ? AppColors.ok : Colors.orange;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0),
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
         borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircleAvatar(radius: 4, backgroundColor: color),
           const SizedBox(width: 10),
-          Text(
-            isAvailable ? 'Dr. Available' : 'Dr. On Break',
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+          SizedBox(
+            width: 160, // wide enough for longest expected text
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: Text(
+                _currentText,
+                key: ValueKey(_textIndex),
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -514,7 +580,6 @@ class _DoctorAvailabilityChip extends StatelessWidget {
     );
   }
 }
-
 // ── Notification Bell ─────────────────────────────────────────────────────────
 
 class _NotificationBell extends StatelessWidget {
