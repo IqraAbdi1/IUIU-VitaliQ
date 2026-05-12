@@ -91,206 +91,219 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 48),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 48),
 
-              // --- LOGO ---
-              Image.asset(
-                'assets/images/vitaliq_logo.png',
-                width: 300,
-                height: 300,
-              ),
-              const SizedBox(height: 5),
-
-              // --- TITLES ---
-              const Text(
-                'Clinic Portal',
-                style: TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
-
-              // "For IUIU Community · Main Campus"
-              RichText(
-                text: TextSpan(
-                  text: 'For IUIU Community  ',
-                  style: TextStyle(
-                    color: AppColors.ink3,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
+                  // --- LOGO ---
+                  Image.asset(
+                    'assets/images/vitaliq_logo.png',
+                    width: 300,
+                    height: 300,
                   ),
-                  children: const [
-                    TextSpan(
-                      text: 'Main Campus',
-                      style: TextStyle(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  const SizedBox(height: 5),
 
-              const SizedBox(height: 40),
-
-              // --- REGISTRATION NUMBER FIELD ---
-              _buildTextField(
-                controller: _regNoController,
-                hint: 'Registration number',
-                icon: Icons.person_outline_rounded,
-                keyboardType: TextInputType.text,
-              ),
-              const SizedBox(height: 12),
-
-              // --- PASSWORD FIELD ---
-              _buildTextField(
-                controller: _passwordController,
-                hint: 'Password',
-                icon: Icons.lock_outline_rounded,
-                obscureText: !_isPasswordVisible,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isPasswordVisible
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: AppColors.ink3,
-                    size: 20,
-                  ),
-                  onPressed: () =>
-                      setState(() => _isPasswordVisible = !_isPasswordVisible),
-                ),
-              ),
-
-              // --- FORGOT PASSWORD ---
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    // TODO: navigate to forgot password / contact admin
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.ink2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: const Text(
-                    'Forgot Your Password ?',
+                  // --- TITLES ---
+                  const Text(
+                    'Clinic Portal',
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.underline,
+                      color: AppColors.ink,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                ),
-              ),
+                  const SizedBox(height: 6),
 
-              // --- ERROR MESSAGE ---
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 4),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.err.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.err.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: AppColors.err, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(color: AppColors.err, fontSize: 13),
-                        ),
+                  // "For IUIU Community · Main Campus"
+                  RichText(
+                    text: TextSpan(
+                      text: 'For IUIU Community  ',
+                      style: TextStyle(
+                        color: AppColors.ink3,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ] else
-                const SizedBox(height: 8),
-
-              // --- LOGIN BUTTON ---
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.accent.withValues(
-                      alpha: 0.6,
-                    ),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Log In',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // --- HELP FOOTER ---
-              Text.rich(
-                TextSpan(
-                  text: 'Having trouble? ',
-                  style: TextStyle(color: AppColors.ink3, fontSize: 13),
-                  children: [
-                    WidgetSpan(
-                      child: GestureDetector(
-                        onTap: () {
-                          // TODO: open help screen or contact info
-                        },
-                        child: const Text(
-                          'Contact clinic staff',
+                      children: const [
+                        TextSpan(
+                          text: 'Main Campus',
                           style: TextStyle(
                             color: AppColors.accent,
-                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // --- REGISTRATION NUMBER FIELD ---
+                  _buildTextField(
+                    controller: _regNoController,
+                    hint: 'Registration number',
+                    icon: Icons.person_outline_rounded,
+                    keyboardType: TextInputType.text,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // --- PASSWORD FIELD ---
+                  _buildTextField(
+                    controller: _passwordController,
+                    hint: 'Password',
+                    icon: Icons.lock_outline_rounded,
+                    obscureText: !_isPasswordVisible,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.ink3,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(
+                        () => _isPasswordVisible = !_isPasswordVisible,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+
+                  // --- FORGOT PASSWORD ---
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        // TODO: navigate to forgot password / contact admin
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.ink2,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 8,
+                        ),
+                      ),
+                      child: const Text(
+                        'Forgot Your Password ?',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // --- ERROR MESSAGE ---
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.err.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.err.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: AppColors.err,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(
+                                color: AppColors.err,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else
+                    const SizedBox(height: 8),
+
+                  // --- LOGIN BUTTON ---
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: AppColors.accent.withValues(
+                          alpha: 0.6,
+                        ),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Log In',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // --- HELP FOOTER ---
+                  Text.rich(
+                    TextSpan(
+                      text: 'Having trouble? ',
+                      style: TextStyle(color: AppColors.ink3, fontSize: 13),
+                      children: [
+                        WidgetSpan(
+                          child: GestureDetector(
+                            onTap: () {
+                              // TODO: open help screen or contact info
+                            },
+                            child: const Text(
+                              'Contact clinic staff',
+                              style: TextStyle(
+                                color: AppColors.accent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
