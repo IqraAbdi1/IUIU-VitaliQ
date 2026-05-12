@@ -43,3 +43,7 @@ database/data/
 .idea/
 *.swp
 *.swo
+
+# Large ML/data files
+ai_ml/data/
+ai_ml/models/
