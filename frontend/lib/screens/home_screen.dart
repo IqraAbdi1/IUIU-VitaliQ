@@ -6,7 +6,7 @@ import 'symptom_submission_sheet.dart';
 import 'queue_submission_screen.dart';
 import 'notifications_screen.dart';
 import 'patient_profile_screen.dart';
-
+import 'dart:async';
 // =============================================================================
 // MODELS
 // =============================================================================
@@ -27,6 +27,28 @@ class PrescriptionReminder {
   });
 }
 
+/// Active treatment plan for the patient.
+/// Backend: GET /api/v1/treatment-plans?patient_id={id}
+class PatientTreatmentPlan {
+  final String planId;
+  final String treatment;
+  final String interval;
+  final int totalDoses;
+  final int dosesGiven;
+  final String nextDoseTime;
+
+  const PatientTreatmentPlan({
+    required this.planId,
+    required this.treatment,
+    required this.interval,
+    required this.totalDoses,
+    required this.dosesGiven,
+    required this.nextDoseTime,
+  });
+
+  bool get isComplete => dosesGiven >= totalDoses;
+}
+
 /// A medicine's current stock availability shown on the home screen.
 /// Backend: GET /api/v1/medicines
 class MedicineAvailability {
@@ -43,6 +65,8 @@ class HomeData {
   final int queuePosition;
   final int estimatedWaitMinutes;
   final bool isDoctorAvailable;
+  final String doctorName; // Backend: queue/stats.doctor_name
+  final String doctorSpecialty; // Backend: queue/stats.doctor_specialty
   final bool hasNewNotifications;
   final String healthAdvisoryTitle;
 
@@ -51,6 +75,8 @@ class HomeData {
     required this.queuePosition,
     required this.estimatedWaitMinutes,
     required this.isDoctorAvailable,
+    required this.doctorName,
+    required this.doctorSpecialty,
     required this.hasNewNotifications,
     required this.healthAdvisoryTitle,
   });
@@ -63,9 +89,11 @@ class HomeData {
 // TODO: replace with GET /api/v1/queue/stats?patient_id={id}
 const _mockHomeData = HomeData(
   userName: 'Khalid Gurashi',
-  queuePosition: 0,
-  estimatedWaitMinutes: 0,
-  isDoctorAvailable: false,
+  queuePosition: 7,
+  estimatedWaitMinutes: 13,
+  isDoctorAvailable: true,
+  doctorName: 'Dr. Amina Hassan',
+  doctorSpecialty: 'General Practice',
   hasNewNotifications: false,
   healthAdvisoryTitle: 'Rainy Season Health Advisory',
 );
@@ -90,6 +118,17 @@ final List<PrescriptionReminder> _mockReminders = [
   ),
 ];
 
+// TODO: replace with GET /api/v1/treatment-plans?patient_id={id}
+const PatientTreatmentPlan? _mockTreatmentPlan = PatientTreatmentPlan(
+  planId: 'TP-001',
+  treatment: 'IV Drip — Normal Saline',
+  interval: 'Every 8 hours',
+  totalDoses: 6,
+  dosesGiven: 2,
+  nextDoseTime: '2:00 PM',
+);
+// set to null to simulate no active plan
+
 // TODO: replace with GET /api/v1/medicines
 const List<MedicineAvailability> _mockMedicines = [
   MedicineAvailability(name: 'Paracetamol 500mg', status: AppStatus.ok),
@@ -97,6 +136,273 @@ const List<MedicineAvailability> _mockMedicines = [
   MedicineAvailability(name: 'Cetirizine 10mg', status: AppStatus.ok),
   MedicineAvailability(name: 'Ibuprofen 400mg', status: AppStatus.err),
 ];
+
+// =============================================================================
+// Widgets
+// =============================================================================
+
+class _QuickAccessRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String status;
+  final bool active;
+  final VoidCallback? onTap;
+
+  const _QuickAccessRow({
+    required this.icon,
+    required this.label,
+    required this.status,
+    required this.active,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: active ? AppColors.accent : AppColors.ink3,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: active ? AppColors.ink : AppColors.ink3,
+                    ),
+                  ),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: active ? AppColors.accent : AppColors.ink3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: active ? AppColors.ink3 : AppColors.border,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TreatmentPlanSheet extends StatelessWidget {
+  final PatientTreatmentPlan plan;
+  const _TreatmentPlanSheet({required this.plan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Treatment Plan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.ink2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.border, height: 1),
+              const SizedBox(height: 16),
+              AppInfoBox(
+                label: plan.treatment,
+                body: '${plan.interval} · Next dose at ${plan.nextDoseTime}',
+                variant: AppInfoVariant.accent,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text(
+                    'Progress: ',
+                    style: TextStyle(fontSize: 12, color: AppColors.ink3),
+                  ),
+                  Text(
+                    '${plan.dosesGiven} of ${plan.totalDoses} doses',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: plan.dosesGiven / plan.totalDoses,
+                        minHeight: 6,
+                        backgroundColor: AppColors.border,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.accent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              AppInfoBox(
+                label: 'What to do',
+                body:
+                    'Arrive at the clinic at your scheduled dose time. The nurse will be notified when you check in.',
+                variant: AppInfoVariant.warn,
+              ),
+              const SizedBox(height: 16),
+              // Backend: POST /api/v1/treatment-plans/{planId}/arrived
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: POST /api/v1/treatment-plans/{planId}/arrived
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Nurse notified of your arrival.'),
+                      backgroundColor: AppColors.ok,
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Text(
+                    "I've Arrived",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RemindersSheet extends StatelessWidget {
+  final List<PrescriptionReminder> reminders;
+  final void Function(int, bool) onToggle;
+
+  const _RemindersSheet({required this.reminders, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
+              child: Row(
+                children: [
+                  const Text(
+                    "Today's Reminders",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.ink2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ),
+            const Divider(color: AppColors.border, height: 1),
+            ...reminders.asMap().entries.map(
+              (entry) => _ReminderTile(
+                reminder: entry.value,
+                onToggle: (val) => onToggle(entry.key, val),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // =============================================================================
 // SCREEN
@@ -115,6 +421,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // TODO: load from GET /api/v1/prescriptions/active?patient_id={id}
   late List<PrescriptionReminder> _reminders = _mockReminders;
+
+  // Backend: GET /api/v1/treatment-plans?patient_id={id}
+  final PatientTreatmentPlan? _activePlan = _mockTreatmentPlan;
 
   // TODO: load from GET /api/v1/medicines
   final List<MedicineAvailability> _medicines = _mockMedicines;
@@ -141,17 +450,19 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() {
         _data = HomeData(
-          userName:             ApiService.currentUsername ?? _mockHomeData.userName,
+          userName: ApiService.currentUsername ?? _mockHomeData.userName,
           // only show real queue position after patient has checked in
-          queuePosition:        ApiService.currentVisitId != null
-                                  ? (ApiService.currentQueuePosition ?? 0)
-                                  : 0,
+          queuePosition: ApiService.currentVisitId != null
+              ? (ApiService.currentQueuePosition ?? 0)
+              : 0,
           estimatedWaitMinutes: ApiService.currentVisitId != null
-                                  ? ((ApiService.currentQueuePosition ?? 0) * 8)
-                                  : 0,
-          isDoctorAvailable:    true,
-          hasNewNotifications:  false,
-          healthAdvisoryTitle:  _mockHomeData.healthAdvisoryTitle,
+              ? ((ApiService.currentQueuePosition ?? 0) * 8)
+              : 0,
+          isDoctorAvailable: true,
+          hasNewNotifications: false,
+          healthAdvisoryTitle: _mockHomeData.healthAdvisoryTitle,
+          doctorName: _mockHomeData.doctorName, // add this
+          doctorSpecialty: _mockHomeData.doctorSpecialty,
         );
         // show active queue CTA only if patient has checked in
         if (ApiService.currentVisitId != null) {
@@ -162,12 +473,14 @@ class _HomeScreenState extends State<HomeScreen> {
       // keep mock data if API fails — silent fallback
       setState(() {
         _data = HomeData(
-          userName:             ApiService.currentUsername ?? _mockHomeData.userName,
-          queuePosition:        0,
+          userName: ApiService.currentUsername ?? _mockHomeData.userName,
+          queuePosition: 0,
           estimatedWaitMinutes: 0,
-          isDoctorAvailable:    false,
-          hasNewNotifications:  false,
-          healthAdvisoryTitle:  _mockHomeData.healthAdvisoryTitle,
+          isDoctorAvailable: false,
+          hasNewNotifications: false,
+          healthAdvisoryTitle: _mockHomeData.healthAdvisoryTitle,
+          doctorName: _mockHomeData.doctorName,
+          doctorSpecialty: _mockHomeData.doctorSpecialty,
         );
       });
     }
@@ -194,38 +507,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.of(context).pushReplacementNamed('/login'),
                   showLogout: MediaQuery.of(context).size.width < 600,
                   showBell: MediaQuery.of(context).size.width < 600,
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
-              // ── TODAY'S REMINDERS ────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: "Today's Reminders"),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Card(
-                    color: AppColors.surface,
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: _reminders.asMap().entries.map((entry) {
-                        return _ReminderTile(
-                          reminder: entry.value,
-                          onToggle: (val) => setState(
-                            () => _reminders[entry.key].isDone = val,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
@@ -257,31 +538,78 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-              // ── MEDICINE AVAILABILITY ────────────────────────────────────
+              // ── TREATMENT IN PROGRESS ────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: 'Medicine Availability'),
+                  child: AppSectionHeader(title: 'Treatment in Progress'),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                  child: _MedicineCard(medicines: _medicines),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        _QuickAccessRow(
+                          icon: Icons.vaccines_rounded,
+                          label: 'Treatment Plan',
+                          status:
+                              _activePlan != null && !_activePlan!.isComplete
+                              ? '${_activePlan!.dosesGiven}/${_activePlan!.totalDoses} doses · Next ${_activePlan!.nextDoseTime}'
+                              : 'No active plan',
+                          active:
+                              _activePlan != null && !_activePlan!.isComplete,
+                          onTap: _activePlan != null && !_activePlan!.isComplete
+                              ? () => showDialog(
+                                  context: context,
+                                  barrierColor: Colors.black54,
+                                  builder: (_) =>
+                                      _TreatmentPlanSheet(plan: _activePlan!),
+                                )
+                              : null,
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
+                        _QuickAccessRow(
+                          icon: Icons.medication_rounded,
+                          label: "Today's Reminders",
+                          status: _reminders.any((r) => !r.isDone)
+                              ? '${_reminders.where((r) => !r.isDone).length} pending'
+                              : 'All done',
+                          active: _reminders.any((r) => !r.isDone),
+                          onTap: _reminders.isNotEmpty
+                              ? () => showDialog(
+                                  context: context,
+                                  barrierColor: Colors.black54,
+                                  builder: (_) => _RemindersSheet(
+                                    reminders: _reminders,
+                                    onToggle: (i, val) => setState(
+                                      () => _reminders[i].isDone = val,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-
-              // Space so CTA doesn't cover last card
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
 
           // ── CTA (fixed at bottom) ────────────────────────────────────────
+          // ── CTA (fixed at bottom-right, never over image panel) ──
           Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
+            bottom: 24,
+            right: 24,
             child: _isPatientInQueue
                 ? _ActiveQueueCta(
                     onTap: () => Navigator.of(context).push(
@@ -433,7 +761,11 @@ class _HeroHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _DoctorAvailabilityChip(isAvailable: data.isDoctorAvailable),
+              _DoctorAvailabilityChip(
+                isAvailable: data.isDoctorAvailable,
+                doctorName: data.doctorName,
+                doctorSpecialty: data.doctorSpecialty,
+              ),
               if (showBell)
                 _NotificationBell(
                   hasUpdate: data.hasNewNotifications,
@@ -534,31 +866,87 @@ class _HStatCard extends StatelessWidget {
 
 // ── Doctor Availability Chip ──────────────────────────────────────────────────
 
-class _DoctorAvailabilityChip extends StatelessWidget {
+// ── Doctor Availability Chip ──────────────────────────────────────────────────
+
+// Backend: GET /api/v1/queue/stats → doctor_name, doctor_specialty, is_available
+class _DoctorAvailabilityChip extends StatefulWidget {
   final bool isAvailable;
-  const _DoctorAvailabilityChip({required this.isAvailable});
+  final String doctorName;
+  final String doctorSpecialty;
+
+  const _DoctorAvailabilityChip({
+    required this.isAvailable,
+    required this.doctorName,
+    required this.doctorSpecialty,
+  });
+
+  @override
+  State<_DoctorAvailabilityChip> createState() =>
+      _DoctorAvailabilityChipState();
+}
+
+class _DoctorAvailabilityChipState extends State<_DoctorAvailabilityChip> {
+  int _textIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 2), (_) {
+      setState(() => _textIndex = (_textIndex + 1) % 3);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String get _currentText => switch (_textIndex) {
+    0 => widget.doctorName,
+    1 => widget.doctorSpecialty,
+    _ => widget.isAvailable ? 'Dr. Available' : 'Dr. On Break',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final color = isAvailable ? AppColors.ok : Colors.orange;
+    final color = widget.isAvailable ? AppColors.ok : Colors.orange;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0),
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
         borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircleAvatar(radius: 4, backgroundColor: color),
           const SizedBox(width: 10),
-          Text(
-            isAvailable ? 'Dr. Available' : 'Dr. On Break',
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+          SizedBox(
+            width: 160, // wide enough for longest expected text
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: Text(
+                _currentText,
+                key: ValueKey(_textIndex),
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -566,7 +954,6 @@ class _DoctorAvailabilityChip extends StatelessWidget {
     );
   }
 }
-
 // ── Notification Bell ─────────────────────────────────────────────────────────
 
 class _NotificationBell extends StatelessWidget {
@@ -791,40 +1178,75 @@ class _MedicineCard extends StatelessWidget {
 
 // ── CTA Buttons ───────────────────────────────────────────────────────────────
 
-class _CheckInCta extends StatelessWidget {
+class _CheckInCta extends StatefulWidget {
   final VoidCallback onTap;
   const _CheckInCta({required this.onTap});
 
   @override
+  State<_CheckInCta> createState() => _CheckInCtaState();
+}
+
+class _CheckInCtaState extends State<_CheckInCta>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulse;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 1.08,
+    ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 17),
-        decoration: BoxDecoration(
-          color: AppColors.err,
-          borderRadius: BorderRadius.circular(50),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.err.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(Icons.sick_outlined, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text(
-              "Feeling sick? Check-in",
-              style: TextStyle(
+            // ── Outer pulse ring ──
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.err.withValues(alpha: 0.18),
+              ),
+            ),
+            // ── Main button ──
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.err.withValues(alpha: 0.92),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.err.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.sentiment_very_dissatisfied,
                 color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                letterSpacing: 0.1,
+                size: 24,
               ),
             ),
           ],
@@ -842,36 +1264,38 @@ class _ActiveQueueCta extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 17),
-        decoration: BoxDecoration(
-          color: AppColors.ok,
-          borderRadius: BorderRadius.circular(50),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.ok.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 6),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.ok.withValues(alpha: 0.18),
             ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text(
-              "Check submission status",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                letterSpacing: 0.1,
-              ),
+          ),
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.ok.withValues(alpha: 0.92),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.ok.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-          ],
-        ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+        ],
       ),
     );
   }

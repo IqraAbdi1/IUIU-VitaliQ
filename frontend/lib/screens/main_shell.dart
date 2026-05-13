@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/lab_results_screen.dart';
 import '../theme.dart';
@@ -11,8 +12,33 @@ import 'notifications_screen.dart';
 import 'nurse_screen.dart';
 import 'staff_home_screen.dart';
 
-
 const _kDesktopBreakpoint = 600.0;
+
+/// Max width of the scrollable content area on desktop.
+/// Cards stop stretching beyond this — right side gets the image panel.
+const _kContentMaxWidth = 960.0;
+
+/// Width of the right-side image panel (desktop only).
+const _kImagePanelWidth = 500.0;
+
+// ---------------------------------------------------------------------------
+// Campus image assets — add your files to assets/images/ and list them here.
+// The slider will cycle through them automatically.
+// ---------------------------------------------------------------------------
+const _campusImages = [
+  'assets/images/campus_1.jpg',
+  'assets/images/campus_2.jpg',
+  'assets/images/campus_3.jpg',
+  'assets/images/campus_4.jpg',
+  'assets/images/campus_5.jpg',
+  'assets/images/campus_6.jpg',
+  'assets/images/campus_7.jpg',
+  // add more as needed
+];
+
+// ---------------------------------------------------------------------------
+// Tab configuration
+// ---------------------------------------------------------------------------
 
 class _TabItem {
   final String label;
@@ -28,6 +54,86 @@ class _TabItem {
   });
 }
 
+const _patientTabs = [
+  _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: HomeScreen(),
+    showTopBar: false,
+  ),
+  _TabItem(
+    label: 'My Health',
+    icon: Icons.monitor_heart_rounded,
+    screen: MyHealthScreen(),
+  ),
+  _TabItem(
+    label: 'Prescriptions',
+    icon: Icons.medication_rounded,
+    screen: PrescriptionsScreen(),
+  ),
+  _TabItem(
+    label: 'Lab',
+    icon: Icons.biotech_rounded,
+    screen: LabResultsScreen(),
+  ),
+];
+
+const _doctorTabs = [
+  _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'doctor', staffName: 'Dr. Staff'),
+    showTopBar: false,
+  ),
+  _TabItem(
+    label: 'Queue',
+    icon: Icons.format_list_bulleted_rounded,
+    screen: DoctorQueueScreen(),
+  ),
+];
+
+const _labTabs = [
+  _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'lab', staffName: 'Lab Staff'),
+    showTopBar: false,
+  ),
+  _TabItem(label: 'Lab', icon: Icons.biotech_rounded, screen: LabTechScreen()),
+];
+
+const _nurseTabs = [
+  _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'nurse', staffName: 'Nurse Staff'),
+    showTopBar: false,
+  ),
+  _TabItem(
+    label: 'Station',
+    icon: Icons.medical_services_rounded,
+    screen: NurseScreen(canDispense: true),
+  ),
+];
+
+const _adminTabs = [
+  _TabItem(
+    label: 'Home',
+    icon: Icons.home_rounded,
+    screen: StaffHomeScreen(role: 'admin', staffName: 'Admin'),
+    showTopBar: false,
+  ),
+  _TabItem(
+    label: 'Overview',
+    icon: Icons.bar_chart_rounded,
+    screen: AdminScreen(),
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Shell
+// ---------------------------------------------------------------------------
+
 class MainShell extends StatefulWidget {
   final String role;
   const MainShell({super.key, this.role = 'patient'});
@@ -38,97 +144,26 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-  late List<_TabItem> _tabs; // ← removed final so it can be assigned in initState
+  late final List<_TabItem> _tabs;
 
   @override
   void initState() {
     super.initState();
-    // ── build tabs WITHOUT const so StaffHomeScreen.initState() fires ──
     switch (widget.role) {
       case 'doctor':
-        _tabs = [
-          _TabItem(
-            label: 'Home',
-            icon: Icons.home_rounded,
-            screen: StaffHomeScreen(role: 'doctor'),
-            showTopBar: false,
-          ),
-          _TabItem(
-            label: 'Queue',
-            icon: Icons.format_list_bulleted_rounded,
-            screen: DoctorQueueScreen(),
-          ),
-        ];
+        _tabs = _doctorTabs;
         break;
       case 'lab':
-        _tabs = [
-          _TabItem(
-            label: 'Home',
-            icon: Icons.home_rounded,
-            screen: StaffHomeScreen(role: 'lab'),
-            showTopBar: false,
-          ),
-          _TabItem(
-            label: 'Lab',
-            icon: Icons.biotech_rounded,
-            screen: LabTechScreen(),
-          ),
-        ];
+        _tabs = _labTabs;
         break;
       case 'nurse':
-        _tabs = [
-          _TabItem(
-            label: 'Home',
-            icon: Icons.home_rounded,
-            screen: StaffHomeScreen(role: 'nurse'),
-            showTopBar: false,
-          ),
-          _TabItem(
-            label: 'Station',
-            icon: Icons.medical_services_rounded,
-            screen: NurseScreen(canDispense: true),
-          ),
-        ];
+        _tabs = _nurseTabs;
         break;
       case 'admin':
-        _tabs = [
-          _TabItem(
-            label: 'Home',
-            icon: Icons.home_rounded,
-            screen: StaffHomeScreen(role: 'admin'),
-            showTopBar: false,
-          ),
-          _TabItem(
-            label: 'Overview',
-            icon: Icons.bar_chart_rounded,
-            screen: AdminScreen(),
-          ),
-        ];
+        _tabs = _adminTabs;
         break;
-        default:
-        _tabs = [
-          _TabItem(
-            label: 'Home',
-            icon: Icons.home_rounded,
-            screen: HomeScreen(),
-            showTopBar: false,
-          ),
-          _TabItem(
-            label: 'My Health',
-            icon: Icons.monitor_heart_rounded,
-            screen: MyHealthScreen(),
-          ),
-          _TabItem(
-            label: 'Prescriptions',
-            icon: Icons.medication_rounded,
-            screen: PrescriptionsScreen(),
-          ),
-          _TabItem(
-            label: 'Lab',
-            icon: Icons.biotech_rounded,
-            screen: LabResultsScreen(),
-          ),
-        ];
+      default:
+        _tabs = _patientTabs;
     }
   }
 
@@ -138,11 +173,13 @@ class _MainShellState extends State<MainShell> {
     Navigator.of(context).pushReplacementNamed('/login');
   }
 
+  /// Shows the menu as a centered floating dialog on both mobile and desktop.
+  /// This looks correct on all window sizes — no more mid-screen bottom sheet.
   void _openMenu() {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AppMenu(
+      barrierColor: Colors.black54,
+      builder: (_) => _AppMenuDialog(
         role: widget.role,
         onSwitchToPatient: () {
           Navigator.pop(context);
@@ -181,6 +218,10 @@ class _MainShellState extends State<MainShell> {
           );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Mobile layout
+// ---------------------------------------------------------------------------
 
 class _MobileLayout extends StatelessWidget {
   final List<_TabItem> tabs;
@@ -221,6 +262,10 @@ class _MobileLayout extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Desktop layout
+// ---------------------------------------------------------------------------
+
 class _DesktopLayout extends StatelessWidget {
   final List<_TabItem> tabs;
   final int currentIndex;
@@ -255,13 +300,152 @@ class _DesktopLayout extends StatelessWidget {
               onBellTap: onBellTap,
               onMenuTap: onMenuTap,
             ),
-            const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
+
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: AppColors.border,
+            ),
+
+            // ── Main content — capped at _kContentMaxWidth ─
             Expanded(
               child: Column(
                 children: [
                   _TopBar(title: tab.label),
-                  Expanded(child: tab.screen),
+                  Expanded(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: _kContentMaxWidth,
+                        ),
+                        child: tab.screen,
+                      ),
+                    ),
+                  ),
                 ],
+              ),
+            ),
+
+            // ── Right image panel ──────────────────────────
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: AppColors.border,
+            ),
+            SizedBox(
+              width: (MediaQuery.of(context).size.width * 0.28).clamp(
+                150.0,
+                500.0,
+              ),
+              child: const _CampusImagePanel(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Right-side campus image panel
+// Clips from the top as the window shrinks vertically.
+// The bottom of the image is always anchored.
+// ---------------------------------------------------------------------------
+
+class _CampusImagePanel extends StatefulWidget {
+  const _CampusImagePanel();
+
+  @override
+  State<_CampusImagePanel> createState() => _CampusImagePanelState();
+}
+
+class _CampusImagePanelState extends State<_CampusImagePanel> {
+  int _current = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-advance every 5 seconds
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      setState(() {
+        _current = (_current + 1) % _campusImages.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      // ClipRect ensures the image is clipped by the container bounds.
+      // Align.bottomCenter keeps the bottom anchored — top clips away
+      // naturally as the window height is reduced.
+      child: ClipRect(
+        child: Stack(
+          children: [
+            // Crossfade between images
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 800),
+              child: Align(
+                key: ValueKey(_current),
+                alignment: Alignment.bottomCenter,
+                child: Image.asset(
+                  _campusImages[_current],
+                  width: _kImagePanelWidth,
+                  // Use a very tall height so the image always fills
+                  // the panel regardless of window height.
+                  height: 2000,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+
+            // Subtle gradient overlay at the top — softens the clip edge
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 80,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [AppColors.bg, AppColors.bg.withValues(alpha: 0)],
+                  ),
+                ),
+              ),
+            ),
+
+            // Dot indicators at bottom
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_campusImages.length, (i) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == _current ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: i == _current
+                          ? AppColors.accent
+                          : AppColors.border,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
               ),
             ),
           ],
@@ -270,6 +454,10 @@ class _DesktopLayout extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Side rail
+// ---------------------------------------------------------------------------
 
 class _SideRail extends StatelessWidget {
   final List<_TabItem> tabs;
@@ -318,9 +506,24 @@ class _SideRail extends StatelessWidget {
           const Spacer(),
           const Divider(height: 1, thickness: 1, color: AppColors.border),
           const SizedBox(height: 8),
-          _RailItem(icon: Icons.notifications_outlined, label: 'Alerts',  isActive: false, onTap: onBellTap),
-          _RailItem(icon: Icons.menu_rounded,           label: 'Menu',    isActive: false, onTap: onMenuTap),
-          _RailItem(icon: Icons.logout_rounded,         label: 'Logout',  isActive: false, onTap: onLogout),
+          _RailItem(
+            icon: Icons.notifications_outlined,
+            label: 'Alerts',
+            isActive: false,
+            onTap: onBellTap,
+          ),
+          _RailItem(
+            icon: Icons.menu_rounded,
+            label: 'Menu',
+            isActive: false,
+            onTap: onMenuTap,
+          ),
+          _RailItem(
+            icon: Icons.logout_rounded,
+            label: 'Logout',
+            isActive: false,
+            onTap: onLogout,
+          ),
           const SizedBox(height: 8),
         ],
       ),
@@ -362,7 +565,11 @@ class _RailItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22, color: isActive ? AppColors.accent : AppColors.ink3),
+            Icon(
+              icon,
+              size: 22,
+              color: isActive ? AppColors.accent : AppColors.ink3,
+            ),
             const SizedBox(height: 4),
             Text(
               label,
@@ -398,13 +605,21 @@ class _TopBar extends StatelessWidget {
           if (onLogout != null)
             _IconBtn(
               onTap: onLogout!,
-              child: const Icon(Icons.logout_rounded, size: 20, color: AppColors.ink2),
+              child: const Icon(
+                Icons.logout_rounded,
+                size: 20,
+                color: AppColors.ink2,
+              ),
             ),
           Expanded(
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.ink),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AppColors.ink,
+              ),
             ),
           ),
           if (MediaQuery.of(context).size.width < 600)
@@ -415,15 +630,24 @@ class _TopBar extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(Icons.notifications_outlined, size: 22, color: AppColors.ink2),
+                  const Icon(
+                    Icons.notifications_outlined,
+                    size: 22,
+                    color: AppColors.ink2,
+                  ),
                   Positioned(
-                    top: -2, right: -2,
+                    top: -2,
+                    right: -2,
                     child: Container(
-                      width: 8, height: 8,
+                      width: 8,
+                      height: 8,
                       decoration: BoxDecoration(
                         color: AppColors.err,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.surface, width: 1.5),
+                        border: Border.all(
+                          color: AppColors.surface,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -446,7 +670,8 @@ class _IconBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38, height: 38,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(10),
@@ -476,7 +701,13 @@ class _BottomNav extends StatelessWidget {
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
-        boxShadow: [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -2))],
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 12,
+            offset: Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -501,10 +732,16 @@ class _BottomNav extends StatelessWidget {
                           margin: const EdgeInsets.only(bottom: 6),
                           decoration: BoxDecoration(
                             color: AppColors.accent,
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(3)),
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(3),
+                            ),
                           ),
                         ),
-                        Icon(tab.icon, size: 22, color: isActive ? AppColors.accent : AppColors.ink3),
+                        Icon(
+                          tab.icon,
+                          size: 22,
+                          color: isActive ? AppColors.accent : AppColors.ink3,
+                        ),
                         const SizedBox(height: 3),
                         Text(
                           tab.label,
@@ -529,7 +766,14 @@ class _BottomNav extends StatelessWidget {
                       SizedBox(height: 9),
                       Icon(Icons.menu_rounded, size: 22, color: AppColors.ink3),
                       SizedBox(height: 3),
-                      Text('Menu', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.ink3)),
+                      Text(
+                        'Menu',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink3,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -542,42 +786,109 @@ class _BottomNav extends StatelessWidget {
   }
 }
 
-class _AppMenu extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// App Menu — centered floating dialog (works on mobile + desktop)
+// Replaces the old bottom sheet that looked broken on desktop.
+// ---------------------------------------------------------------------------
+
+class _AppMenuDialog extends StatelessWidget {
   final String role;
   final VoidCallback onSwitchToPatient;
 
-  const _AppMenu({required this.role, required this.onSwitchToPatient});
+  const _AppMenuDialog({required this.role, required this.onSwitchToPatient});
 
-  bool get _isStaff => role == 'doctor' || role == 'nurse' || role == 'lab' || role == 'admin';
+  bool get _isStaff =>
+      role == 'doctor' || role == 'nurse' || role == 'lab' || role == 'admin';
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)))),
-          const SizedBox(height: 16),
-          _MenuItem(icon: Icons.person_outline_rounded, label: 'My Profile',     onTap: () => Navigator.pop(context)),
-          _MenuItem(icon: Icons.info_outline_rounded,   label: 'About VitalIQ',  onTap: () => Navigator.pop(context)),
-          _MenuItem(icon: Icons.help_outline_rounded,   label: 'Help & Support', onTap: () => Navigator.pop(context)),
-          if (_isStaff) ...[
-            const Divider(color: AppColors.border, height: 1),
-            _MenuItem(
-              icon: Icons.switch_account_rounded,
-              label: 'Switch to Patient View',
-              valueColor: AppColors.accent,
-              onTap: onSwitchToPatient,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      // Remove default dialog padding/insets
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Menu',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.bg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: AppColors.ink2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                ),
+                const Divider(color: AppColors.border, height: 1),
+                _MenuItem(
+                  icon: Icons.person_outline_rounded,
+                  label: 'My Profile',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to ProfileScreen
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.info_outline_rounded,
+                  label: 'About VitalIQ',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to AboutScreen
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.help_outline_rounded,
+                  label: 'Help & Support',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to HelpScreen
+                  },
+                ),
+                if (_isStaff) ...[
+                  const Divider(color: AppColors.border, height: 1),
+                  _MenuItem(
+                    icon: Icons.switch_account_rounded,
+                    label: 'Switch to Patient View',
+                    valueColor: AppColors.accent,
+                    onTap: onSwitchToPatient,
+                  ),
+                ],
+                const SizedBox(height: 12),
+              ],
             ),
-          ],
-          const SizedBox(height: 8),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -589,7 +900,12 @@ class _MenuItem extends StatelessWidget {
   final Color? valueColor;
   final VoidCallback onTap;
 
-  const _MenuItem({required this.icon, required this.label, required this.onTap, this.valueColor});
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -603,7 +919,14 @@ class _MenuItem extends StatelessWidget {
           children: [
             Icon(icon, size: 20, color: color),
             const SizedBox(width: 14),
-            Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
             const Spacer(),
             Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.ink3),
           ],

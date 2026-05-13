@@ -10,7 +10,7 @@ import '../shared/widgets.dart';
 // MODELS
 // ─────────────────────────────────────────────
 
-enum _NurseTab { queue, followUps, education, dispensing }
+enum _NurseTab { queue, followUps, treatmentPlans, education, dispensing }
 
 enum _Severity { urgent, moderate, routine }
 
@@ -52,6 +52,31 @@ class _FollowUpPatient {
   });
 }
 
+class _TreatmentPlan {
+  final String planId;
+  final String patientName;
+  final String studentId;
+  final String treatment; // e.g. "IV Drip - Normal Saline"
+  final String interval; // e.g. "Every 8 hours"
+  final int totalDoses;
+  final int dosesGiven;
+  final String nextDoseTime;
+  final bool patientArrived;
+  // Backend: GET /api/v1/treatment-plans?role=nurse
+
+  const _TreatmentPlan({
+    required this.planId,
+    required this.patientName,
+    required this.studentId,
+    required this.treatment,
+    required this.interval,
+    required this.totalDoses,
+    required this.dosesGiven,
+    required this.nextDoseTime,
+    required this.patientArrived,
+  });
+}
+
 class _EducationNote {
   final String patientName;
   final String studentId;
@@ -73,6 +98,7 @@ class _NurseStats {
   final int inQueue;
   final int urgentCount;
   final int pendingFollowUps;
+  final int activeTreatmentPlans;
   final int roomsOccupied;
   // Backend: GET /api/v1/queue/stats?role=nurse
 
@@ -80,6 +106,7 @@ class _NurseStats {
     required this.inQueue,
     required this.urgentCount,
     required this.pendingFollowUps,
+    required this.activeTreatmentPlans,
     required this.roomsOccupied,
   });
 }
@@ -92,6 +119,7 @@ const _mockStats = _NurseStats(
   inQueue: 6,
   urgentCount: 1,
   pendingFollowUps: 3,
+  activeTreatmentPlans: 2,
   roomsOccupied: 2,
 );
 
@@ -147,6 +175,31 @@ const _mockFollowUps = [
   ),
 ];
 
+const _mockTreatmentPlans = [
+  _TreatmentPlan(
+    planId: 'TP-001',
+    patientName: 'Amara Diallo',
+    studentId: 'STU-2024-0391',
+    treatment: 'IV Drip — Normal Saline',
+    interval: 'Every 8 hours',
+    totalDoses: 6,
+    dosesGiven: 2,
+    nextDoseTime: '2:00 PM',
+    patientArrived: true,
+  ),
+  _TreatmentPlan(
+    planId: 'TP-002',
+    patientName: 'Yusuf Osman',
+    studentId: 'STU-2024-0558',
+    treatment: 'Oral Rehydration Therapy',
+    interval: 'Every 6 hours',
+    totalDoses: 8,
+    dosesGiven: 5,
+    nextDoseTime: '4:30 PM',
+    patientArrived: false,
+  ),
+];
+
 const _mockEducationNotes = [
   _EducationNote(
     patientName: 'Amina Nakato',
@@ -184,6 +237,7 @@ class _NurseScreenState extends State<NurseScreen> {
   final _NurseStats _stats = _mockStats;
   final List<_QueuePatient> _queue = List.of(_mockQueue);
   final List<_FollowUpPatient> _followUps = List.of(_mockFollowUps);
+  final List<_TreatmentPlan> _treatmentPlans = List.of(_mockTreatmentPlans);
   final List<_EducationNote> _educationNotes = List.of(_mockEducationNotes);
   final Map<String, String> _roomAssignments = {};
   final Set<String> _triageNoted = {};
@@ -203,6 +257,26 @@ class _NurseScreenState extends State<NurseScreen> {
         dueDate: f.dueDate,
         doctorNote: f.doctorNote,
         completed: !f.completed,
+      );
+    });
+  }
+
+  void _administerDose(String planId) {
+    setState(() {
+      final i = _treatmentPlans.indexWhere((p) => p.planId == planId);
+      if (i == -1) return;
+      final plan = _treatmentPlans[i];
+      _treatmentPlans[i] = _TreatmentPlan(
+        planId: plan.planId,
+        patientName: plan.patientName,
+        studentId: plan.studentId,
+        treatment: plan.treatment,
+        interval: plan.interval,
+        totalDoses: plan.totalDoses,
+        dosesGiven: plan.dosesGiven + 1,
+        nextDoseTime:
+            plan.nextDoseTime, // Backend will calculate real next time
+        patientArrived: false, // reset after dose given
       );
     });
   }
@@ -243,6 +317,7 @@ class _NurseScreenState extends State<NurseScreen> {
             activeTab: _activeTab,
             queueCount: _queue.length,
             followUpCount: _followUps.where((f) => !f.completed).length,
+            treatmentPlanCount: _treatmentPlans.length, // ADD
             educationCount: _educationNotes.length,
             canDispense: widget.canDispense,
             onTabChanged: (t) => setState(() => _activeTab = t),
@@ -263,6 +338,10 @@ class _NurseScreenState extends State<NurseScreen> {
     _NurseTab.followUps => _FollowUpList(
       followUps: _followUps,
       onToggle: _toggleFollowUp,
+    ),
+    _NurseTab.treatmentPlans => _TreatmentPlanList(
+      plans: _treatmentPlans,
+      onAdminister: _administerDose,
     ),
     _NurseTab.education => _EducationList(
       notes: _educationNotes,
@@ -360,9 +439,10 @@ class _NurseStatsStrip extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: AppStatCard(
-                    label: 'Ed. Notes Today',
-                    value: '${stats.pendingFollowUps}',
-                    valueColor: AppColors.ink2,
+                    label: 'Treatment Plans',
+                    value: '${stats.activeTreatmentPlans}',
+                    sub: 'active today',
+                    valueColor: AppColors.accent,
                   ),
                 ),
               ],
@@ -382,6 +462,7 @@ class _NurseTabToggle extends StatelessWidget {
   final _NurseTab activeTab;
   final int queueCount;
   final int followUpCount;
+  final int treatmentPlanCount; // ADD
   final int educationCount;
   final bool canDispense;
   final ValueChanged<_NurseTab> onTabChanged;
@@ -390,6 +471,7 @@ class _NurseTabToggle extends StatelessWidget {
     required this.activeTab,
     required this.queueCount,
     required this.followUpCount,
+    required this.treatmentPlanCount, // ADD
     required this.educationCount,
     required this.canDispense,
     required this.onTabChanged,
@@ -418,6 +500,11 @@ class _NurseTabToggle extends StatelessWidget {
             label: 'Follow-ups ($followUpCount)',
             active: activeTab == _NurseTab.followUps,
             onTap: () => onTabChanged(_NurseTab.followUps),
+          ),
+          _TabPill(
+            label: 'Treatment ($treatmentPlanCount)',
+            active: activeTab == _NurseTab.treatmentPlans,
+            onTap: () => onTabChanged(_NurseTab.treatmentPlans),
           ),
           _TabPill(
             label: 'Education ($educationCount)',
@@ -1028,6 +1115,352 @@ class _FollowUpCard extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// TREATMENT PLAN LIST
+// ─────────────────────────────────────────────
+
+class _PrimaryButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool loading;
+
+  const _PrimaryButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: loading
+            ? const Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 16, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _TreatmentPlanList extends StatelessWidget {
+  final List<_TreatmentPlan> plans;
+  final ValueChanged<String> onAdminister;
+
+  const _TreatmentPlanList({required this.plans, required this.onAdminister});
+
+  @override
+  Widget build(BuildContext context) {
+    if (plans.isEmpty) {
+      return const _EmptyState(
+        icon: Icons.medical_services_outlined,
+        message: 'No active treatment plans',
+        sub: 'Doctor-assigned treatment plans will appear here.',
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      itemCount: plans.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) => _TreatmentPlanCard(
+        plan: plans[i],
+        onAdminister: () => onAdminister(plans[i].planId),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// TREATMENT PLAN CARD
+// ─────────────────────────────────────────────
+
+class _TreatmentPlanCard extends StatelessWidget {
+  final _TreatmentPlan plan;
+  final VoidCallback onAdminister;
+
+  const _TreatmentPlanCard({required this.plan, required this.onAdminister});
+
+  bool get _isComplete => plan.dosesGiven >= plan.totalDoses;
+  double get _progress => plan.dosesGiven / plan.totalDoses;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(
+            color: _isComplete
+                ? AppColors.ok
+                : plan.patientArrived
+                ? AppColors.accent
+                : AppColors.warn,
+            width: 3.5,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Top row ──
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plan.patientName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '${plan.studentId} · ${plan.interval}',
+                      style: const TextStyle(
+                        fontFamily: 'DMMono',
+                        fontSize: 10,
+                        color: AppColors.ink3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AppStatusChip(
+                label: _isComplete
+                    ? 'Complete'
+                    : plan.patientArrived
+                    ? 'Arrived'
+                    : 'Awaiting',
+                status: _isComplete
+                    ? AppStatus.ok
+                    : plan.patientArrived
+                    ? AppStatus.accent
+                    : AppStatus.warn,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── Treatment ──
+          Text(
+            plan.treatment,
+            style: const TextStyle(fontSize: 12.5, color: AppColors.ink2),
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── Dose progress ──
+          Row(
+            children: [
+              const Text(
+                'Doses: ',
+                style: TextStyle(fontSize: 11.5, color: AppColors.ink3),
+              ),
+              Text(
+                '${plan.dosesGiven} of ${plan.totalDoses}',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: _progress,
+                    minHeight: 6,
+                    backgroundColor: AppColors.border,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _isComplete ? AppColors.ok : AppColors.accent,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── Next dose time ──
+          if (!_isComplete)
+            AppInfoBox(
+              label: 'Next dose',
+              body: plan.patientArrived
+                  ? 'Patient has arrived — administer dose now.'
+                  : 'Scheduled for ${plan.nextDoseTime}. Waiting for patient.',
+              variant: plan.patientArrived
+                  ? AppInfoVariant.accent
+                  : AppInfoVariant.warn,
+            ),
+
+          if (!_isComplete) ...[
+            const SizedBox(height: 10),
+            if (plan.patientArrived)
+              _PrimaryButton(
+                label: 'Administer Dose',
+                icon: Icons.vaccines_rounded,
+                onTap: onAdminister,
+              )
+            else
+              GestureDetector(
+                onTap: () => showDialog(
+                  context: context,
+                  barrierColor: Colors.black54,
+                  builder: (_) => Dialog(
+                    backgroundColor: Colors.transparent,
+                    insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Material(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(22),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: const BoxDecoration(
+                                color: AppColors.warnBg,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.lock_outline_rounded,
+                                color: AppColors.warn,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'Patient not arrived',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Dose can only be administered after the patient checks in via the app.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.ink2,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface2,
+                                  borderRadius: BorderRadius.circular(50),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: const Text(
+                                  'Got it',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.ink2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface2,
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        size: 16,
+                        color: AppColors.ink3,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Awaiting Patient Arrival',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );
