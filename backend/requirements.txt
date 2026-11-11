@@ -1,0 +1,15 @@
+# Web API
+django
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+drf-spectacular
+psycopg2-binary
+python-dotenv
+
+# Machine learning (needed to load the trained models in backend/AI_ML/models)
+numpy
+pandas
+scikit-learn
+statsmodels
+joblib

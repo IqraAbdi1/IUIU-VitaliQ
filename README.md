@@ -1,67 +1,100 @@
-# VitalIQ
+# VitalIQ: Smart Clinic Management System with ML Triage
 
-Vitaliq is a professional, multi-tier academic project designed to enhance IUIU university clinical service efficiency. Built with a modern tech stack, it leverages AI & ML to ensure better performance with critical medical data.
+VitalIQ digitizes the full clinical workflow at the IUIU Health Centre, from patient check-in to prescription dispensing. Two machine-learning components sit at its core: a **triage model** that ranks patients by urgency, and a **demand-forecasting pipeline** that tells the pharmacy what to restock before stock runs out.
 
-## Project Architecture
+Built as a final-year (capstone) project for the Bachelor of Computer Science at the Islamic University in Uganda.
 
+## What it does
 
+| Area | Features |
+| :--- | :--- |
+| **ML triage** | Patients report symptoms; a Random Forest classifier predicts severity (Minor / Moderate / Severe) to order the doctor's queue. Free-text symptoms are matched to known symptoms; anything unmatched is flagged for the doctor. |
+| **Pharmacy forecasting** | Exponential Smoothing models forecast disease trends three months ahead. Forecasts are converted into demand pressure per medicine, and a restock model recommends what to reorder. |
+| **Clinical workflow** | Patient profiles, visits, consultations, lab requests and results, prescriptions, announcements |
+| **Roles and access** | JWT authentication with role-based dashboards for patients, doctors, nurses, lab attendants and admins, plus forced password change on first login |
+| **API docs** | Interactive OpenAPI / Swagger documentation at `/api/docs/` |
 
-The system is organized into a decoupled, containerized architecture:
+## Architecture
 
+```
+Flutter app (web, mobile, desktop)
+        |
+        |  REST + JWT
+        v
+Django REST Framework API  --->  ML layer (backend/AI_ML)
+        |                          - triage: Random Forest (scikit-learn)
+        v                          - forecasting: Exponential Smoothing (statsmodels)
+   PostgreSQL                      - restock recommendation (scikit-learn)
+```
 
+| Folder | Contents |
+| :--- | :--- |
+| `backend/` | Django REST API: `users`, `patients`, `consultation`, `pharmacy`, `clinic_staff` apps |
+| `backend/AI_ML/` | Prediction code and the trained models the API loads at runtime |
+| `ai_ml/` | Research notebook comparing triage models (Random Forest with SMOTE, neural network, BERT). The raw training data is not included because of its size. |
+| `machine learning/` | Synthetic symptom dataset generator used to train the triage model |
+| `frontend/` | Flutter client |
 
-- **`/frontend`**: Flutter-based client application (Web & Mobile support).
-- **`/backend`**: Django REST Framework API handling business logic and orchestration.
-- **`/ai_ml`**: Python-based modules for predictive medical analytics and data preprocessing.
-- **`/database`**: PostgreSQL relational database schema and persistence layer.
-- **`/docs`**: Project documentation, including BRD, UI Mockups, and System Architecture diagrams.
-
-## Tech Stack
+## Tech stack
 
 | Tier | Technology |
 | :--- | :--- |
-| **Frontend** | Flutter (Dart) |
-| **Backend** | Django / Django REST Framework |
-| **Database** | PostgreSQL |
-| **ML/AI** | Python (Pandas, Scikit-learn) |
-| **DevOps** | Docker & Docker Compose |
+| Frontend | Flutter (Dart) |
+| Backend | Python, Django, Django REST Framework, SimpleJWT, drf-spectacular |
+| Machine learning | scikit-learn, statsmodels, pandas, NumPy, imbalanced-learn (SMOTE) |
+| Database | PostgreSQL |
+| DevOps | Docker, Docker Compose |
 
-## Getting Started
+## Getting started
 
-### Prerequisites
-- Docker Desktop (WSL 2 backend recommended for Windows 11)
-- Flutter SDK
-- Python 3.11+
+### 1. Configure environment variables
 
-### Installation & Setup
+Secrets are never committed. Copy the template and fill in your own values:
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/your-username/vitaliq.git](https://github.com/your-username/vitaliq.git)
-   cd vitaliq
-   ```
+```bash
+cp backend/.env.example backend/.env
+```
 
+Generate a Django secret key with:
 
-2. **Spin up the environment:**
-Use Docker Compose to launch the database and backend services:
-    ```bash
-    docker-compose up --build
-    ```
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
 
+### 2a. Run with Docker (recommended)
 
+```bash
+docker compose up --build
+```
 
-3. **Run the Frontend:**
-Navigate to the frontend directory and launch the Flutter web app:
-    ```bash
-    cd frontend
-    flutter run -d chrome
-    ```
+The API runs at http://localhost:8000 and the API docs at http://localhost:8000/api/docs/.
 
+### 2b. Or run the backend locally
 
+Requires Python 3.11+ and a running PostgreSQL server that matches the `DB_*` values in `backend/.env`.
 
-**Roadmap & Documentation**
-Detailed project requirements and architecture diagrams will be added in the /docs directory. 
-This project follows a professional SDLC (Software Development Life Cycle) to ensure academic and technical rigor.
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate        # macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
 
+### 3. Run the Flutter app
 
+```bash
+cd frontend
+flutter pub get
+flutter run -d chrome
+```
 
+The app calls the API at `http://127.0.0.1:8000` (set in `frontend/lib/services/api_service.dart`).
+
+## Team
+
+- **Iqra Abdirizak Mohamed** ([@IqraAbdi1](https://github.com/IqraAbdi1))
+- **Khalid Gurashi** ([@NullUmbra](https://github.com/NullUmbra))
+
+Islamic University in Uganda, 2026
